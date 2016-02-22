@@ -32,6 +32,11 @@ class btDefaultCollisionConfiguration;
 class RagdollDemo : public GlutDemoApplication
 {
 
+    //ADDED
+    btRigidBody* body[9];
+    btCollisionShape* geom[9];
+    bool pause;
+
 	btAlignedObjectArray<class RagDoll*> m_ragdolls;
 
 	//keep the collision shapes, for deletion/cleanup
@@ -46,6 +51,14 @@ class RagdollDemo : public GlutDemoApplication
 	btDefaultCollisionConfiguration* m_collisionConfiguration;
 
 public:
+
+    void CreateBox(int index, double x, double y, double z, double l, double w, double h);
+    void CreateBox(int index, btVector3 pos, btVector3 size);
+
+    void CreateCylinder(int index, double x, double y, double z, double l, double w, double h, char axis);
+    void CreateCylinder(int index, btVector3 pos, btVector3 size, char axis);
+
+
 	void initPhysics();
 
 	void exitPhysics();

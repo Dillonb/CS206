@@ -5,8 +5,8 @@
 
    This software is provided 'as-is', without any express or implied warranty.
    In no event will the authors be held liable for any damages arising from the use of this software.
-   Permission is granted to anyone to use this software for any purpose, 
-   including commercial applications, and to alter it and redistribute it freely, 
+   Permission is granted to anyone to use this software for any purpose,
+   including commercial applications, and to alter it and redistribute it freely,
    subject to the following restrictions:
 
    1. The origin of this software must not be misrepresented; you must not claim that you wrote the original software. If you use this software in a product, an acknowledgment in the product documentation would be appreciated but is not required.
@@ -331,6 +331,7 @@ class RagDoll
 
 void RagdollDemo::initPhysics()
 {
+    pause= true;
     // Setup the basic world
 
     setTexturing(true);
@@ -380,18 +381,36 @@ void RagdollDemo::initPhysics()
     //startOffset.setValue(-1,0.5,0);
     //spawnRagdoll(startOffset);
 
-    clientResetScene();		
+    //CreateBox(0, btVector3(0, 1, 0), btVector3(1, 0.2, 1));
+    CreateBox(0, btVector3(0, 2, 0), btVector3(1, 0.2, 1));
+
+    //CreateCylinder(1, btVector3(1.8,.2,0), btVector3(.2, 2, .2), 'z');
+    CreateCylinder(1, btVector3(1.8, 2, 0), btVector3(.9, .2, .2), 'x');
+    CreateCylinder(2, btVector3(2.7, 1, 0), btVector3(0.2, .9, .2), 'y');
+
+    CreateCylinder(3, btVector3(-1.8, 2, 0), btVector3(.9, .2, .2), 'x');
+    CreateCylinder(4, btVector3(-2.7, 1, 0), btVector3(0.2, .9, .2), 'y');
+
+    CreateCylinder(5, btVector3(0, 2, 1.8), btVector3(.2, .9, .9), 'z');
+    CreateCylinder(6, btVector3(0, 1, 2.7), btVector3(0.2, .9, .2), 'y');
+
+    CreateCylinder(7, btVector3(0, 2, -1.8), btVector3(.2, .9, .9), 'z');
+    CreateCylinder(8, btVector3(0, 1, -2.7), btVector3(0.2, .9, .2), 'y');
+
+    clientResetScene();
 }
 
 void RagdollDemo::spawnRagdoll(const btVector3& startOffset)
 {
+    /*
     RagDoll* ragDoll = new RagDoll (m_dynamicsWorld, startOffset);
     m_ragdolls.push_back(ragDoll);
-}	
+    */
+}
 
 void RagdollDemo::clientMoveAndDisplay()
 {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); 
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     //simple dynamics world doesn't handle fixed-time-stepping
     float ms = getDeltaTimeMicroseconds();
@@ -402,7 +421,9 @@ void RagdollDemo::clientMoveAndDisplay()
 
     if (m_dynamicsWorld)
     {
-        //m_dynamicsWorld->stepSimulation(ms / 1000000.f);
+        if (!pause) {
+            m_dynamicsWorld->stepSimulation(ms / 1000000.f);
+        }
 
         //optional but useful: debug drawing
         m_dynamicsWorld->debugDrawWorld();
@@ -410,7 +431,7 @@ void RagdollDemo::clientMoveAndDisplay()
 
     }
 
-    renderme(); 
+    renderme();
 
     glFlush();
 
@@ -419,7 +440,7 @@ void RagdollDemo::clientMoveAndDisplay()
 
 void RagdollDemo::displayCallback()
 {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); 
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     renderme();
 
@@ -501,7 +522,47 @@ void	RagdollDemo::exitPhysics()
 
 }
 
+void RagdollDemo::CreateBox(int index, double x, double y, double z, double l, double w, double h) {
+    this->geom[index] = new btBoxShape(btVector3(l,w,h));
 
+    btTransform offset;
+    offset.setIdentity();
+    offset.setOrigin(btVector3(btScalar(x), btScalar(y), btScalar(z)));
 
+    btTransform transform;
+    transform.setIdentity();
 
+    this->body[index] = localCreateRigidBody(btScalar(1.), offset*transform, this->geom[index]);
 
+    this->m_dynamicsWorld->addRigidBody(body[index]);
+}
+
+void RagdollDemo::CreateCylinder(int index, double x, double y, double z, double l, double w, double h, char axis) {
+    if (axis == 'y') {
+        this->geom[index] = new btCylinderShape(btVector3(l,w,h));
+    }
+    else if (axis == 'x') {
+        this->geom[index] = new btCylinderShapeX(btVector3(l,w,h));
+    }
+    else if (axis == 'z') {
+        this->geom[index] = new btCylinderShapeZ(btVector3(l,w,h));
+    }
+
+    btTransform offset;
+    offset.setIdentity();
+    offset.setOrigin(btVector3(btScalar(x), btScalar(y), btScalar(z)));
+
+    btTransform transform;
+    transform.setIdentity();
+
+    this->body[index] = localCreateRigidBody(btScalar(1.), offset*transform, this->geom[index]);
+
+    this->m_dynamicsWorld->addRigidBody(body[index]);
+}
+
+void RagdollDemo::CreateBox(int index, btVector3 pos, btVector3 size) {
+    this->CreateBox(index, pos.x(), pos.y(), pos.z(), size.x(), size.y(), size.z());
+}
+void RagdollDemo::CreateCylinder(int index, btVector3 pos, btVector3 size, char axis) {
+    this->CreateCylinder(index, pos.x(), pos.y(), pos.z(), size.x(), size.y(), size.z(), axis);
+}
