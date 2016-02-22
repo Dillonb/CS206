@@ -19,6 +19,8 @@
 #define CONSTRAINT_DEBUG_SIZE 0.2f
 
 
+#include <iostream>
+
 #include "btBulletDynamicsCommon.h"
 #include "GlutStuff.h"
 #include "GL_ShapeDrawer.h"
@@ -326,12 +328,8 @@ class RagDoll
     }
 };
 
-
-
-
-void RagdollDemo::initPhysics()
-{
-    pause= true;
+void RagdollDemo::initPhysics() {
+    pause = false;
     // Setup the basic world
 
     setTexturing(true);
@@ -381,35 +379,38 @@ void RagdollDemo::initPhysics()
     //startOffset.setValue(-1,0.5,0);
     //spawnRagdoll(startOffset);
 
-    //CreateBox(0, btVector3(0, 1, 0), btVector3(1, 0.2, 1));
     CreateBox(0, btVector3(0, 2, 0), btVector3(1, 0.2, 1));
 
-    //CreateCylinder(1, btVector3(1.8,.2,0), btVector3(.2, 2, .2), 'z');
     CreateCylinder(1, btVector3(1.8, 2, 0), btVector3(.9, .2, .2), 'x');
     CreateCylinder(2, btVector3(2.7, 1, 0), btVector3(0.2, .9, .2), 'y');
+    CreateHinge(0, 0, 1, btVector3(1, 2, 0), btVector3(0, 0, 1));
+    CreateHinge(1, 1, 2, btVector3(2.7, 2, 0), btVector3(0, 0, 1));
 
+    /*
     CreateCylinder(3, btVector3(-1.8, 2, 0), btVector3(.9, .2, .2), 'x');
     CreateCylinder(4, btVector3(-2.7, 1, 0), btVector3(0.2, .9, .2), 'y');
+    CreateHinge(0, 3, 4, btVector3(0,0,0), btVector3(1,1,1));
 
     CreateCylinder(5, btVector3(0, 2, 1.8), btVector3(.2, .9, .9), 'z');
     CreateCylinder(6, btVector3(0, 1, 2.7), btVector3(0.2, .9, .2), 'y');
+    CreateHinge(0, 5, 6, btVector3(0,0,0), btVector3(1,1,1));
 
     CreateCylinder(7, btVector3(0, 2, -1.8), btVector3(.2, .9, .9), 'z');
     CreateCylinder(8, btVector3(0, 1, -2.7), btVector3(0.2, .9, .2), 'y');
+    CreateHinge(0, 7, 8, btVector3(0,0,0), btVector3(1,1,1));
+    */
 
     clientResetScene();
 }
 
-void RagdollDemo::spawnRagdoll(const btVector3& startOffset)
-{
+void RagdollDemo::spawnRagdoll(const btVector3& startOffset) {
     /*
     RagDoll* ragDoll = new RagDoll (m_dynamicsWorld, startOffset);
     m_ragdolls.push_back(ragDoll);
     */
 }
 
-void RagdollDemo::clientMoveAndDisplay()
-{
+void RagdollDemo::clientMoveAndDisplay() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     //simple dynamics world doesn't handle fixed-time-stepping
@@ -438,8 +439,7 @@ void RagdollDemo::clientMoveAndDisplay()
     glutSwapBuffers();
 }
 
-void RagdollDemo::displayCallback()
-{
+void RagdollDemo::displayCallback() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     renderme();
@@ -452,8 +452,7 @@ void RagdollDemo::displayCallback()
     glutSwapBuffers();
 }
 
-void RagdollDemo::keyboardCallback(unsigned char key, int x, int y)
-{
+void RagdollDemo::keyboardCallback(unsigned char key, int x, int y) {
     switch (key)
     {
         case 'e':
@@ -471,8 +470,7 @@ void RagdollDemo::keyboardCallback(unsigned char key, int x, int y)
 
 
 
-void	RagdollDemo::exitPhysics()
-{
+void	RagdollDemo::exitPhysics() {
 
     int i;
 
@@ -537,7 +535,9 @@ void RagdollDemo::CreateBox(int index, double x, double y, double z, double l, d
     this->m_dynamicsWorld->addRigidBody(body[index]);
 }
 
-void RagdollDemo::CreateCylinder(int index, double x, double y, double z, double l, double w, double h, char axis) {
+void RagdollDemo::CreateCylinder(int index, double x, double y, double z,
+        double l, double w, double h,
+        char axis) {
     if (axis == 'y') {
         this->geom[index] = new btCylinderShape(btVector3(l,w,h));
     }
@@ -563,6 +563,31 @@ void RagdollDemo::CreateCylinder(int index, double x, double y, double z, double
 void RagdollDemo::CreateBox(int index, btVector3 pos, btVector3 size) {
     this->CreateBox(index, pos.x(), pos.y(), pos.z(), size.x(), size.y(), size.z());
 }
+
 void RagdollDemo::CreateCylinder(int index, btVector3 pos, btVector3 size, char axis) {
     this->CreateCylinder(index, pos.x(), pos.y(), pos.z(), size.x(), size.y(), size.z(), axis);
+}
+
+void RagdollDemo::CreateHinge(int index, int body1, int body2,
+        double x, double y, double z,
+        double ax, double ay, double az) {
+    btVector3 p(x, y, z);
+    btVector3 a(ax, ay, az);
+
+    btVector3 p1 = PointWorldToLocal(body1, p);
+    btVector3 p2 = PointWorldToLocal(body2, p);
+
+    btVector3 a1 = AxisWorldToLocal(body1, a);
+    btVector3 a2 = AxisWorldToLocal(body2, a);
+
+    joints[index] = new btHingeConstraint(*body[body1], *body[body2],
+            p1, p2,
+            a1, a2, false);
+    this->m_dynamicsWorld->addConstraint(joints[index], true);
+}
+
+void RagdollDemo::CreateHinge(int index, int body1, int body2, btVector3 pos, btVector3 axis) {
+    this->CreateHinge(index, body1, body2,
+            pos.x(), pos.y(), pos.z(),
+            axis.x(), axis.y(), axis.z());
 }

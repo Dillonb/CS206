@@ -21,6 +21,8 @@ Written by: Marten Svanfeldt
 
 #include "GlutDemoApplication.h"
 #include "LinearMath/btAlignedObjectArray.h"
+#include "BulletDynamics/ConstraintSolver/btHingeConstraint.h"
+
 class btBroadphaseInterface;
 class btCollisionShape;
 class btOverlappingPairCache;
@@ -36,6 +38,8 @@ class RagdollDemo : public GlutDemoApplication
     btRigidBody* body[9];
     btCollisionShape* geom[9];
     bool pause;
+    btHingeConstraint* joints[8];
+    bool oneStep;
 
 	btAlignedObjectArray<class RagDoll*> m_ragdolls;
 
@@ -58,6 +62,19 @@ public:
     void CreateCylinder(int index, double x, double y, double z, double l, double w, double h, char axis);
     void CreateCylinder(int index, btVector3 pos, btVector3 size, char axis);
 
+
+    void CreateHinge(int index, int body1, int body2,
+             double x, double y, double z,
+             double ax, double ay, double az);
+    void CreateHinge(int index, int body1, int body2, btVector3 pos, btVector3 axis);
+
+    btVector3 flipZY(btVector3 input) {
+        btScalar temp;
+        temp = input[1];
+        input[1] = input[2];
+        input[2] = temp;
+        return input;
+    }
 
 	void initPhysics();
 
@@ -83,6 +100,18 @@ public:
 		demo->initPhysics();
 		return demo;
 	}
+
+    btVector3 PointWorldToLocal(int index, btVector3 &p) {
+          btTransform local1 = body[index]->getCenterOfMassTransform().inverse();
+            return local1 * p;
+    }
+
+    btVector3 AxisWorldToLocal(int index, btVector3 &a) {
+        btTransform local1 = body[index]->getCenterOfMassTransform().inverse();
+        btVector3 zero(0,0,0);
+        local1.setOrigin(zero);
+        return local1 * a;
+    }
 	
 };
 
