@@ -373,7 +373,7 @@ void RagdollDemo::initPhysics() {
 
     }
 
-    // Spawn one ragdoll
+    //Spawn one ragdoll
     //btVector3 startOffset(1,0.5,0);
     //spawnRagdoll(startOffset);
     //startOffset.setValue(-1,0.5,0);
@@ -386,19 +386,20 @@ void RagdollDemo::initPhysics() {
     CreateHinge(0, 0, 1, btVector3(1, 2, 0), btVector3(0, 0, 1));
     CreateHinge(1, 1, 2, btVector3(2.7, 2, 0), btVector3(0, 0, 1));
 
-    /*
     CreateCylinder(3, btVector3(-1.8, 2, 0), btVector3(.9, .2, .2), 'x');
     CreateCylinder(4, btVector3(-2.7, 1, 0), btVector3(0.2, .9, .2), 'y');
-    CreateHinge(0, 3, 4, btVector3(0,0,0), btVector3(1,1,1));
+    CreateHinge(2, 0, 3, btVector3(-1, 2, 0), btVector3(0, 0, 1));
+    CreateHinge(3, 3, 4, btVector3(-2.7, 2, 0), btVector3(0, 0, 1));
 
     CreateCylinder(5, btVector3(0, 2, 1.8), btVector3(.2, .9, .9), 'z');
     CreateCylinder(6, btVector3(0, 1, 2.7), btVector3(0.2, .9, .2), 'y');
-    CreateHinge(0, 5, 6, btVector3(0,0,0), btVector3(1,1,1));
+    CreateHinge(4, 0, 5, btVector3(0, 2, 1),btVector3(1, 0, 0));
+    CreateHinge(5, 5, 6, btVector3(0, 2, 2.7), btVector3(1, 0, 0));
 
-    CreateCylinder(7, btVector3(0, 2, -1.8), btVector3(.2, .9, .9), 'z');
-    CreateCylinder(8, btVector3(0, 1, -2.7), btVector3(0.2, .9, .2), 'y');
-    CreateHinge(0, 7, 8, btVector3(0,0,0), btVector3(1,1,1));
-    */
+    CreateCylinder(7, btVector3(0, 2, -1.8), btVector3(0.2, 0.9, 0.9), 'z');
+    CreateCylinder(8, btVector3(0, 1, -2.7), btVector3(0.2, 0.9, 0.2), 'y');
+    CreateHinge(6, 0, 7, btVector3(0, 2, -1), btVector3(1, 0, 0));
+    CreateHinge(7, 7, 8, btVector3(0, 2, -2.7), btVector3(1, 0, 0));
 
     clientResetScene();
 }
@@ -583,6 +584,8 @@ void RagdollDemo::CreateHinge(int index, int body1, int body2,
     joints[index] = new btHingeConstraint(*body[body1], *body[body2],
             p1, p2,
             a1, a2, false);
+    joints[index]->setLimit(-45.*3.14159/180., 45.*3.14159/180.);
+
     this->m_dynamicsWorld->addConstraint(joints[index], true);
 }
 

@@ -22,6 +22,7 @@ Written by: Marten Svanfeldt
 #include "GlutDemoApplication.h"
 #include "LinearMath/btAlignedObjectArray.h"
 #include "BulletDynamics/ConstraintSolver/btHingeConstraint.h"
+#include "GLDebugDrawer.h"
 
 class btBroadphaseInterface;
 class btCollisionShape;
@@ -55,6 +56,16 @@ class RagdollDemo : public GlutDemoApplication
 	btDefaultCollisionConfiguration* m_collisionConfiguration;
 
 public:
+
+    virtual void renderme() { 
+        extern GLDebugDrawer gDebugDrawer; 
+        // Call the parent method.
+        GlutDemoApplication::renderme(); 
+        // Make a circle with a 0.9 radius at (0,0,0) 
+        // with RGB color (1,0,0).
+        //btVector3 pos(0,2,1);
+        //gDebugDrawer.drawSphere(pos, 0.5, btVector3(1., 0., 0.));
+    }
 
     void CreateBox(int index, double x, double y, double z, double l, double w, double h);
     void CreateBox(int index, btVector3 pos, btVector3 size);
