@@ -42,6 +42,9 @@ class RagdollDemo : public GlutDemoApplication
     btHingeConstraint* joints[8];
     bool oneStep;
 
+void ActuateJoint(int jointIndex, double desiredAngle, double jointOffset, double timeStep);
+
+
 	btAlignedObjectArray<class RagDoll*> m_ragdolls;
 
 	//keep the collision shapes, for deletion/cleanup

@@ -1,21 +1,3 @@
-/*
-   Bullet Continuous Collision Detection and Physics Library
-   Ragdoll Demo
-   Copyright (c) 2007 Starbreeze Studios
-
-   This software is provided 'as-is', without any express or implied warranty.
-   In no event will the authors be held liable for any damages arising from the use of this software.
-   Permission is granted to anyone to use this software for any purpose,
-   including commercial applications, and to alter it and redistribute it freely,
-   subject to the following restrictions:
-
-   1. The origin of this software must not be misrepresented; you must not claim that you wrote the original software. If you use this software in a product, an acknowledgment in the product documentation would be appreciated but is not required.
-   2. Altered source versions must be plainly marked as such, and must not be misrepresented as being the original software.
-   3. This notice may not be removed or altered from any source distribution.
-
-   Written by: Marten Svanfeldt
-   */
-
 #define CONSTRAINT_DEBUG_SIZE 0.2f
 
 
@@ -388,13 +370,13 @@ void RagdollDemo::initPhysics() {
 
     CreateCylinder(3, btVector3(-1.8, 2, 0), btVector3(.9, .2, .2), 'x');
     CreateCylinder(4, btVector3(-2.7, 1, 0), btVector3(0.2, .9, .2), 'y');
-    CreateHinge(2, 0, 3, btVector3(-1, 2, 0), btVector3(0, 0, 1));
-    CreateHinge(3, 3, 4, btVector3(-2.7, 2, 0), btVector3(0, 0, 1));
+    CreateHinge(2, 0, 3, btVector3(-1, 2, 0), btVector3(0, 0, -1));
+    CreateHinge(3, 3, 4, btVector3(-2.7, 2, 0), btVector3(0, 0, -1));
 
     CreateCylinder(5, btVector3(0, 2, 1.8), btVector3(.2, .9, .9), 'z');
     CreateCylinder(6, btVector3(0, 1, 2.7), btVector3(0.2, .9, .2), 'y');
-    CreateHinge(4, 0, 5, btVector3(0, 2, 1),btVector3(1, 0, 0));
-    CreateHinge(5, 5, 6, btVector3(0, 2, 2.7), btVector3(1, 0, 0));
+    CreateHinge(4, 0, 5, btVector3(0, 2, 1),btVector3(-1, 0, 0));
+    CreateHinge(5, 5, 6, btVector3(0, 2, 2.7), btVector3(-1, 0, 0));
 
     CreateCylinder(7, btVector3(0, 2, -1.8), btVector3(0.2, 0.9, 0.9), 'z');
     CreateCylinder(8, btVector3(0, 1, -2.7), btVector3(0.2, 0.9, 0.2), 'y');
@@ -424,6 +406,18 @@ void RagdollDemo::clientMoveAndDisplay() {
     if (m_dynamicsWorld)
     {
         if (!pause) {
+            for (int i = 0; i < 8; i++) {
+                ActuateJoint(i, (rand() / (double)RAND_MAX) * 90. - 45., -90, ms / 1000000.f); 
+            }
+            /*
+            ActuateJoint(1, -45., -90., ms / 1000000.f); 
+            ActuateJoint(2, -45., -90., ms / 1000000.f); 
+            ActuateJoint(3, -45., -90., ms / 1000000.f); 
+            ActuateJoint(4, -45., -90., ms / 1000000.f); 
+            ActuateJoint(5, -45., -90., ms / 1000000.f); 
+            ActuateJoint(6, -45., -90., ms / 1000000.f); 
+            ActuateJoint(7, -45., -90., ms / 1000000.f); 
+            */
             m_dynamicsWorld->stepSimulation(ms / 1000000.f);
         }
 
@@ -593,4 +587,13 @@ void RagdollDemo::CreateHinge(int index, int body1, int body2, btVector3 pos, bt
     this->CreateHinge(index, body1, body2,
             pos.x(), pos.y(), pos.z(),
             axis.x(), axis.y(), axis.z());
+}
+
+
+void RagdollDemo::ActuateJoint(int jointIndex, double desiredAngle, double jointOffset, double timeStep) {
+    btHingeConstraint* joint = this->joints[jointIndex];
+
+    joint->setMotorTarget(btScalar(desiredAngle), timeStep);
+    joint->setMaxMotorImpulse(btScalar(2));
+    joint->enableMotor(true);
 }
