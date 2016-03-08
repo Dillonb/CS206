@@ -22,6 +22,7 @@ Written by: Marten Svanfeldt
 #include "GlutDemoApplication.h"
 #include "LinearMath/btAlignedObjectArray.h"
 #include "BulletDynamics/ConstraintSolver/btHingeConstraint.h"
+#include "BulletCollision/NarrowPhaseCollision/btManifoldPoint.h"
 #include "GLDebugDrawer.h"
 
 class btBroadphaseInterface;
@@ -41,8 +42,13 @@ class RagdollDemo : public GlutDemoApplication
     bool pause;
     btHingeConstraint* joints[8];
     bool oneStep;
+    int IDs[10];
 
-void ActuateJoint(int jointIndex, double desiredAngle, double jointOffset, double timeStep);
+    int timeStep;
+
+    double weights[4][8];
+
+    void ActuateJoint(int jointIndex, double desiredAngle, double jointOffset, double timeStep);
 
 
 	btAlignedObjectArray<class RagDoll*> m_ragdolls;
@@ -59,15 +65,20 @@ void ActuateJoint(int jointIndex, double desiredAngle, double jointOffset, doubl
 	btDefaultCollisionConfiguration* m_collisionConfiguration;
 
 public:
+    int touches[10];
+    btVector3 touchPoints[10];
 
-    virtual void renderme() { 
-        extern GLDebugDrawer gDebugDrawer; 
+    virtual void renderme() {
+        extern GLDebugDrawer gDebugDrawer;
         // Call the parent method.
-        GlutDemoApplication::renderme(); 
-        // Make a circle with a 0.9 radius at (0,0,0) 
-        // with RGB color (1,0,0).
-        //btVector3 pos(0,2,1);
-        //gDebugDrawer.drawSphere(pos, 0.5, btVector3(1., 0., 0.));
+        GlutDemoApplication::renderme();
+        // Make a circle with a 0.9 radius at (0,0,0)
+        // with RGB color (1,0,0)
+        for (int i = 0; i < 10; i++) {
+            if (touches[i]) {
+                gDebugDrawer.drawSphere(touchPoints[i], 0.2, btVector3(1., 0., 0.));
+            }
+        }
     }
 
     void CreateBox(int index, double x, double y, double z, double l, double w, double h);

@@ -310,8 +310,44 @@ class RagDoll
     }
 };
 
+static RagdollDemo* ragdollDemo;
+
+bool myContactProcessedCallback(btManifoldPoint& cp, void* body0, void* body1) {
+    int *ID1, *ID2;
+    btCollisionObject* o1 = static_cast<btCollisionObject*>(body0); 
+    btCollisionObject* o2 = static_cast<btCollisionObject*>(body1);
+    int groundID = 9;
+
+    ID1 = static_cast<int*>(o1->getUserPointer()); 
+    ID2 = static_cast<int*>(o2->getUserPointer());
+
+    ragdollDemo->touches[*ID1] = 1;
+    ragdollDemo->touches[*ID2] = 1;
+
+    ragdollDemo->touchPoints[*ID1] = cp.m_positionWorldOnB; 
+    ragdollDemo->touchPoints[*ID2] = cp.m_positionWorldOnB;
+
+    return false;
+}
+
 void RagdollDemo::initPhysics() {
-    pause = false;
+    ragdollDemo = this;
+
+    timeStep = 0;
+
+    for (int i = 0; i < 10; i++) {
+        IDs[i] = i;
+    }
+
+    for (int i = 0; i < 8; i++) {
+      for (int j = 0; j < 4; j++) {
+        weights[i][j] = ((rand() / (double)RAND_MAX) * 2 - 1);
+      }
+    }
+
+    gContactProcessedCallback = myContactProcessedCallback;
+
+    pause = true;
     // Setup the basic world
 
     setTexturing(true);
@@ -348,6 +384,7 @@ void RagdollDemo::initPhysics() {
         btCollisionObject* fixedGround = new btCollisionObject();
         fixedGround->setCollisionShape(groundShape);
         fixedGround->setWorldTransform(groundTransform);
+        fixedGround->setUserPointer(&(IDs[9]));
         m_dynamicsWorld->addCollisionObject(fixedGround);
 #else
         localCreateRigidBody(btScalar(0.),groundTransform,groundShape);
@@ -405,10 +442,10 @@ void RagdollDemo::clientMoveAndDisplay() {
 
     if (m_dynamicsWorld)
     {
+        if (oneStep) {
+            pause = false;
+        }
         if (!pause) {
-            for (int i = 0; i < 8; i++) {
-                ActuateJoint(i, (rand() / (double)RAND_MAX) * 90. - 45., -90, ms / 1000000.f); 
-            }
             /*
             ActuateJoint(1, -45., -90., ms / 1000000.f); 
             ActuateJoint(2, -45., -90., ms / 1000000.f); 
@@ -418,7 +455,41 @@ void RagdollDemo::clientMoveAndDisplay() {
             ActuateJoint(6, -45., -90., ms / 1000000.f); 
             ActuateJoint(7, -45., -90., ms / 1000000.f); 
             */
+
+            // Set all touch sensors to 0
+
+            for (int i = 0; i < 10; i++) {
+                touches[i] = 0;
+            }
+
             m_dynamicsWorld->stepSimulation(ms / 1000000.f);
+
+            for (int i = 0; i < 10; i++) {
+              printf("%d", touches[i]);
+            }
+            if (!(timeStep % 10)) {
+              for (int i = 0; i < 8; i++) {
+                double motorCommand = 0.0;
+
+                for (int j = 0; j < 4; j++) {
+                  motorCommand += touches[i] * weights[i][j];
+                }
+
+                // Fit in [-1,1]
+                motorCommand = tanh(motorCommand);
+                // Expand to fit in [-45,45] (degrees)
+                motorCommand *= 45;
+
+                ActuateJoint(i, motorCommand, -90, ms / 1000000.f); 
+              }
+            }
+            timeStep++;
+
+            printf("\n");
+        }
+        if (oneStep) {
+          oneStep = false;
+          pause = true;
         }
 
         //optional but useful: debug drawing
@@ -456,6 +527,16 @@ void RagdollDemo::keyboardCallback(unsigned char key, int x, int y) {
                 spawnRagdoll(startOffset);
                 break;
             }
+        case 'p':
+            {
+                pause = !pause;
+                break;
+            }
+        case 's':
+          {
+            oneStep = true;
+            break;
+          }
         default:
             DemoApplication::keyboardCallback(key, x, y);
     }
@@ -527,6 +608,8 @@ void RagdollDemo::CreateBox(int index, double x, double y, double z, double l, d
 
     this->body[index] = localCreateRigidBody(btScalar(1.), offset*transform, this->geom[index]);
 
+    this->body[index]->setUserPointer(&(IDs[index]));
+
     this->m_dynamicsWorld->addRigidBody(body[index]);
 }
 
@@ -551,6 +634,7 @@ void RagdollDemo::CreateCylinder(int index, double x, double y, double z,
     transform.setIdentity();
 
     this->body[index] = localCreateRigidBody(btScalar(1.), offset*transform, this->geom[index]);
+    this->body[index]->setUserPointer(&(IDs[index]));
 
     this->m_dynamicsWorld->addRigidBody(body[index]);
 }
@@ -594,6 +678,7 @@ void RagdollDemo::ActuateJoint(int jointIndex, double desiredAngle, double joint
     btHingeConstraint* joint = this->joints[jointIndex];
 
     joint->setMotorTarget(btScalar(desiredAngle), timeStep);
-    joint->setMaxMotorImpulse(btScalar(2));
+    joint->setMaxMotorImpulse(btScalar(1.5));
     joint->enableMotor(true);
 }
+
