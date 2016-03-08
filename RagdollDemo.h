@@ -110,8 +110,6 @@ public:
 		exitPhysics();
 	}
 
-	void spawnRagdoll(const btVector3& startOffset);
-
 	virtual void clientMoveAndDisplay();
 
 	virtual void displayCallback();

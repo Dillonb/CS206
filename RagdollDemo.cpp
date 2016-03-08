@@ -318,13 +318,16 @@ bool myContactProcessedCallback(btManifoldPoint& cp, void* body0, void* body1) {
     btCollisionObject* o2 = static_cast<btCollisionObject*>(body1);
     int groundID = 9;
 
+    // Get the numeric IDs of the two bodies that just contacted each other
     ID1 = static_cast<int*>(o1->getUserPointer()); 
     ID2 = static_cast<int*>(o2->getUserPointer());
 
+    // Set the corresponding touch sensors to true
     ragdollDemo->touches[*ID1] = 1;
     ragdollDemo->touches[*ID2] = 1;
 
-    ragdollDemo->touchPoints[*ID1] = cp.m_positionWorldOnB; 
+    // Add the coordinates of the touch to the touchPoints array.
+    ragdollDemo->touchPoints[*ID1] = cp.m_positionWorldOnB;
     ragdollDemo->touchPoints[*ID2] = cp.m_positionWorldOnB;
 
     return false;
@@ -339,6 +342,7 @@ void RagdollDemo::initPhysics() {
         IDs[i] = i;
     }
 
+    // Initialize the neural network to random values
     for (int i = 0; i < 8; i++) {
       for (int j = 0; j < 4; j++) {
         weights[i][j] = ((rand() / (double)RAND_MAX) * 2 - 1);
@@ -353,7 +357,7 @@ void RagdollDemo::initPhysics() {
     setTexturing(true);
     setShadows(true);
 
-    setCameraDistance(btScalar(5.));
+    setCameraDistance(btScalar(10.));
 
     m_collisionConfiguration = new btDefaultCollisionConfiguration();
 
@@ -398,23 +402,28 @@ void RagdollDemo::initPhysics() {
     //startOffset.setValue(-1,0.5,0);
     //spawnRagdoll(startOffset);
 
+    // Robot's body
     CreateBox(0, btVector3(0, 2, 0), btVector3(1, 0.2, 1));
 
+    // Leg
     CreateCylinder(1, btVector3(1.8, 2, 0), btVector3(.9, .2, .2), 'x');
     CreateCylinder(2, btVector3(2.7, 1, 0), btVector3(0.2, .9, .2), 'y');
     CreateHinge(0, 0, 1, btVector3(1, 2, 0), btVector3(0, 0, 1));
     CreateHinge(1, 1, 2, btVector3(2.7, 2, 0), btVector3(0, 0, 1));
 
+    // Leg
     CreateCylinder(3, btVector3(-1.8, 2, 0), btVector3(.9, .2, .2), 'x');
     CreateCylinder(4, btVector3(-2.7, 1, 0), btVector3(0.2, .9, .2), 'y');
     CreateHinge(2, 0, 3, btVector3(-1, 2, 0), btVector3(0, 0, -1));
     CreateHinge(3, 3, 4, btVector3(-2.7, 2, 0), btVector3(0, 0, -1));
 
+    // Leg
     CreateCylinder(5, btVector3(0, 2, 1.8), btVector3(.2, .9, .9), 'z');
     CreateCylinder(6, btVector3(0, 1, 2.7), btVector3(0.2, .9, .2), 'y');
     CreateHinge(4, 0, 5, btVector3(0, 2, 1),btVector3(-1, 0, 0));
     CreateHinge(5, 5, 6, btVector3(0, 2, 2.7), btVector3(-1, 0, 0));
 
+    // Leg
     CreateCylinder(7, btVector3(0, 2, -1.8), btVector3(0.2, 0.9, 0.9), 'z');
     CreateCylinder(8, btVector3(0, 1, -2.7), btVector3(0.2, 0.9, 0.2), 'y');
     CreateHinge(6, 0, 7, btVector3(0, 2, -1), btVector3(1, 0, 0));
@@ -423,86 +432,78 @@ void RagdollDemo::initPhysics() {
     clientResetScene();
 }
 
-void RagdollDemo::spawnRagdoll(const btVector3& startOffset) {
-    /*
-    RagDoll* ragDoll = new RagDoll (m_dynamicsWorld, startOffset);
-    m_ragdolls.push_back(ragDoll);
-    */
-}
-
 void RagdollDemo::clientMoveAndDisplay() {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    //simple dynamics world doesn't handle fixed-time-stepping
-    float ms = getDeltaTimeMicroseconds();
+  //simple dynamics world doesn't handle fixed-time-stepping
+  float ms = getDeltaTimeMicroseconds();
 
-    float minFPS = 1000000.f/60.f;
-    if (ms > minFPS)
-        ms = minFPS;
+  float minFPS = 1000000.f/60.f;
+  if (ms > minFPS) {
+    ms = minFPS;
+  }
 
-    if (m_dynamicsWorld)
+  if (m_dynamicsWorld)
     {
-        if (oneStep) {
-            pause = false;
-        }
-        if (!pause) {
-            /*
-            ActuateJoint(1, -45., -90., ms / 1000000.f); 
-            ActuateJoint(2, -45., -90., ms / 1000000.f); 
-            ActuateJoint(3, -45., -90., ms / 1000000.f); 
-            ActuateJoint(4, -45., -90., ms / 1000000.f); 
-            ActuateJoint(5, -45., -90., ms / 1000000.f); 
-            ActuateJoint(6, -45., -90., ms / 1000000.f); 
-            ActuateJoint(7, -45., -90., ms / 1000000.f); 
-            */
-
-            // Set all touch sensors to 0
-
-            for (int i = 0; i < 10; i++) {
-                touches[i] = 0;
-            }
-
-            m_dynamicsWorld->stepSimulation(ms / 1000000.f);
-
-            for (int i = 0; i < 10; i++) {
-              printf("%d", touches[i]);
-            }
-            if (!(timeStep % 10)) {
-              for (int i = 0; i < 8; i++) {
-                double motorCommand = 0.0;
-
-                for (int j = 0; j < 4; j++) {
-                  motorCommand += touches[i] * weights[i][j];
-                }
-
-                // Fit in [-1,1]
-                motorCommand = tanh(motorCommand);
-                // Expand to fit in [-45,45] (degrees)
-                motorCommand *= 45;
-
-                ActuateJoint(i, motorCommand, -90, ms / 1000000.f); 
-              }
-            }
-            timeStep++;
-
-            printf("\n");
-        }
-        if (oneStep) {
-          oneStep = false;
-          pause = true;
+      // Unpause temporarily if oneStep is set to true - we'll
+      // pause again after this loop.
+      if (oneStep) {
+        pause = false;
+      }
+      if (!pause) {
+        // Set all touch sensors to 0
+        for (int i = 0; i < 10; i++) {
+          touches[i] = 0;
         }
 
-        //optional but useful: debug drawing
-        m_dynamicsWorld->debugDrawWorld();
+        m_dynamicsWorld->stepSimulation(ms / 1000000.f);
+
+        // Print the values of all touch sensors
+        for (int i = 0; i < 10; i++) {
+          printf("%d", touches[i]);
+        }
+        printf("\n");
+
+        // Run the neural net every 10 timesteps
+        if (!(timeStep % 10)) {
+          for (int i = 0; i < 8; i++) {
+            double motorCommand = 0.0;
+
+            // Multiply the applicable touch sensor by the weight of each neuron for that leg
+            for (int j = 0; j < 4; j++) {
+              motorCommand += touches[i] * weights[i][j];
+            }
+
+            // Fit in [-1,1]
+            motorCommand = tanh(motorCommand);
+            // Expand to fit in [-45,45] (degrees)
+            motorCommand *= 45;
+
+            // Send the actuation to the applicable motor
+            ActuateJoint(i, motorCommand, -90, ms / 1000000.f); 
+          }
+        }
+        // Increment timeStep
+        timeStep++;
+
+      }
+      // And finally, if oneStep was set to true, set it to false and pause again.
+      if (oneStep) {
+        oneStep = false;
+        pause = true;
+      }
+
+      //optional but useful: debug drawing
+      m_dynamicsWorld->debugDrawWorld();
 
 
     }
 
-    renderme();
+  renderme();
 
-    glFlush();
+  glFlush();
 
-    glutSwapBuffers();
+  glutSwapBuffers();
 }
 
 void RagdollDemo::displayCallback() {
@@ -518,14 +519,17 @@ void RagdollDemo::displayCallback() {
     glutSwapBuffers();
 }
 
+// Keyboard handlers
 void RagdollDemo::keyboardCallback(unsigned char key, int x, int y) {
     switch (key)
     {
         case 'e':
             {
+              /*
                 btVector3 startOffset(0,2,0);
                 spawnRagdoll(startOffset);
                 break;
+              */
             }
         case 'p':
             {
@@ -546,6 +550,7 @@ void RagdollDemo::keyboardCallback(unsigned char key, int x, int y) {
 
 
 
+// Cleanup
 void	RagdollDemo::exitPhysics() {
 
     int i;
@@ -596,6 +601,7 @@ void	RagdollDemo::exitPhysics() {
 
 }
 
+// Creates a box physics object
 void RagdollDemo::CreateBox(int index, double x, double y, double z, double l, double w, double h) {
     this->geom[index] = new btBoxShape(btVector3(l,w,h));
 
@@ -613,6 +619,7 @@ void RagdollDemo::CreateBox(int index, double x, double y, double z, double l, d
     this->m_dynamicsWorld->addRigidBody(body[index]);
 }
 
+// Creates a cylinder physics object
 void RagdollDemo::CreateCylinder(int index, double x, double y, double z,
         double l, double w, double h,
         char axis) {
@@ -647,6 +654,7 @@ void RagdollDemo::CreateCylinder(int index, btVector3 pos, btVector3 size, char 
     this->CreateCylinder(index, pos.x(), pos.y(), pos.z(), size.x(), size.y(), size.z(), axis);
 }
 
+// Creates a hinge joint
 void RagdollDemo::CreateHinge(int index, int body1, int body2,
         double x, double y, double z,
         double ax, double ay, double az) {
@@ -673,7 +681,7 @@ void RagdollDemo::CreateHinge(int index, int body1, int body2, btVector3 pos, bt
             axis.x(), axis.y(), axis.z());
 }
 
-
+// Send a command to the motor
 void RagdollDemo::ActuateJoint(int jointIndex, double desiredAngle, double jointOffset, double timeStep) {
     btHingeConstraint* joint = this->joints[jointIndex];
 
