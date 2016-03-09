@@ -52,6 +52,7 @@ bool myContactProcessedCallback(btManifoldPoint& cp, void* body0, void* body1) {
 }
 
 void RagdollDemo::initPhysics() {
+
     ragdollDemo = this;
 
     timeStep = 0;
@@ -60,16 +61,17 @@ void RagdollDemo::initPhysics() {
         IDs[i] = i;
     }
 
-    // Initialize the neural network to random values
+    // Initialize the neural network by reading from stdin
     for (int i = 0; i < 8; i++) {
       for (int j = 0; j < 4; j++) {
-        weights[i][j] = ((rand() / (double)RAND_MAX) * 2 - 1);
+        std::cin >> weights[i][j];
       }
     }
 
     gContactProcessedCallback = myContactProcessedCallback;
 
-    pause = true;
+    pause = false;
+    oneStep = false;
     // Setup the basic world
 
     setTexturing(true);
@@ -156,31 +158,35 @@ void RagdollDemo::clientMoveAndDisplay() {
   //simple dynamics world doesn't handle fixed-time-stepping
   float ms = getDeltaTimeMicroseconds();
 
+  float timing = 0.1f;
+
   float minFPS = 1000000.f/60.f;
   if (ms > minFPS) {
     ms = minFPS;
   }
 
   if (m_dynamicsWorld)
-    {
+  {
       // Unpause temporarily if oneStep is set to true - we'll
       // pause again after this loop.
       if (oneStep) {
-        pause = false;
+          pause = false;
       }
       if (!pause) {
-        // Set all touch sensors to 0
-        for (int i = 0; i < 10; i++) {
-          touches[i] = 0;
-        }
+          // Set all touch sensors to 0
+          for (int i = 0; i < 10; i++) {
+              touches[i] = 0;
+          }
 
-        m_dynamicsWorld->stepSimulation(ms / 1000000.f);
+              m_dynamicsWorld->stepSimulation(timing);
 
         // Print the values of all touch sensors
+        /*
         for (int i = 0; i < 10; i++) {
           printf("%d", touches[i]);
         }
         printf("\n");
+        */
 
         // Run the neural net every 10 timesteps
         if (!(timeStep % 10)) {
@@ -198,11 +204,26 @@ void RagdollDemo::clientMoveAndDisplay() {
             motorCommand *= 45;
 
             // Send the actuation to the applicable motor
-            ActuateJoint(i, motorCommand, -90, ms / 1000000.f); 
+            ActuateJoint(i, motorCommand, -90, timing); 
           }
         }
         // Increment timeStep
         timeStep++;
+
+        if (timeStep == 1000) {
+          // Get the distance from the origin of the robot's body
+          const btVector3 pos = body[0]->getCenterOfMassPosition();
+          double x, y, z;
+          x = pos.x();
+          y = pos.y();
+          z = pos.z();
+
+          double dist = sqrt(x*x+y*y+z*z);
+
+          // Fitness = distance traveled "into the screen"
+          printf("%f\n", z);
+          exit(0);
+        }
 
       }
       // And finally, if oneStep was set to true, set it to false and pause again.
@@ -273,12 +294,6 @@ void	RagdollDemo::exitPhysics() {
 
     int i;
 
-    for (i=0;i<m_ragdolls.size();i++)
-    {
-        RagDoll* doll = m_ragdolls[i];
-        delete doll;
-    }
-
     //cleanup in the reverse order of creation/initialization
 
     //remove the rigidbodies from the dynamics world and delete them
@@ -315,7 +330,6 @@ void	RagdollDemo::exitPhysics() {
     delete m_dispatcher;
 
     delete m_collisionConfiguration;
-
 
 }
 

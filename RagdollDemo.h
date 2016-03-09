@@ -46,12 +46,9 @@ class RagdollDemo : public GlutDemoApplication
 
     int timeStep;
 
-    double weights[4][8];
+    double weights[8][4];
 
     void ActuateJoint(int jointIndex, double desiredAngle, double jointOffset, double timeStep);
-
-
-	btAlignedObjectArray<class RagDoll*> m_ragdolls;
 
 	//keep the collision shapes, for deletion/cleanup
 	btAlignedObjectArray<btCollisionShape*>	m_collisionShapes;

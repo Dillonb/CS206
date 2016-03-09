@@ -27,5 +27,5 @@ int main(int argc,char* argv[])
         demoApp.initPhysics();
 		demoApp.getDynamicsWorld()->setDebugDrawer(&gDebugDrawer);
 
-        return glutmain(argc, argv,640,480,"dbeliveau core09",&demoApp);
+        return glutmain(argc, argv,640,480,"dbeliveau core10",&demoApp);
 }
