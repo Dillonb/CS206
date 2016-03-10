@@ -44,11 +44,13 @@ class RagdollDemo : public GlutDemoApplication
     bool oneStep;
     int IDs[10];
 
+
     int timeStep;
 
     double weights[8][4];
 
     void ActuateJoint(int jointIndex, double desiredAngle, double jointOffset, double timeStep);
+
 
 	//keep the collision shapes, for deletion/cleanup
 	btAlignedObjectArray<btCollisionShape*>	m_collisionShapes;
@@ -61,9 +63,14 @@ class RagdollDemo : public GlutDemoApplication
 
 	btDefaultCollisionConfiguration* m_collisionConfiguration;
 
+  double fitness();
+
 public:
     int touches[10];
     btVector3 touchPoints[10];
+    void runNoGraphics();
+    void init();
+    bool graphics;
 
     virtual void renderme() {
         extern GLDebugDrawer gDebugDrawer;
