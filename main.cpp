@@ -40,7 +40,7 @@ int main(int argc,char* argv[])
 
   if (demoApp.graphics) {
     demoApp.getDynamicsWorld()->setDebugDrawer(&gDebugDrawer);
-    return glutmain(argc, argv,640,480,"Simulator Window",&demoApp);
+    return glutmain(argc, argv,1366,768,"Simulator Window",&demoApp);
   }
   else {
     demoApp.runNoGraphics();
