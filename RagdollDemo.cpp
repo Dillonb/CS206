@@ -307,7 +307,6 @@ void	RagdollDemo::exitPhysics() {
 
   //remove the rigidbodies from the dynamics world and delete them
 
-  return;
   for (i=m_dynamicsWorld->getNumCollisionObjects()-1; i>=0 ;i--)
     {
       btCollisionObject* obj = m_dynamicsWorld->getCollisionObjectArray()[i];
@@ -323,7 +322,9 @@ void	RagdollDemo::exitPhysics() {
   for (int j=0;j<m_collisionShapes.size();j++)
     {
       btCollisionShape* shape = m_collisionShapes[j];
-      delete shape;
+      if (shape) {
+        delete shape;
+      }
     }
 
   //delete dynamics world
