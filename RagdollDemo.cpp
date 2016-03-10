@@ -27,6 +27,8 @@
 #define M_PI_4     0.785398163397448309616
 #endif
 
+#define FRICTION 2.0
+
 
 static RagdollDemo* ragdollDemo;
 
@@ -355,8 +357,8 @@ void RagdollDemo::CreateBox(int index, double x, double y, double z, double l, d
 
   this->body[index]->setUserPointer(&(IDs[index]));
 
-  this->body[index]->setFriction(2.0);
-  this->body[index]->setRollingFriction(2.0);
+  this->body[index]->setFriction(FRICTION);
+  this->body[index]->setRollingFriction(FRICTION);
 
   this->m_dynamicsWorld->addRigidBody(body[index]);
 }
@@ -385,8 +387,8 @@ void RagdollDemo::CreateCylinder(int index, double x, double y, double z,
   this->body[index] = localCreateRigidBody(btScalar(1.), offset*transform, this->geom[index]);
   this->body[index]->setUserPointer(&(IDs[index]));
 
-  this->body[index]->setFriction(2.0);
-  this->body[index]->setRollingFriction(2.0);
+  this->body[index]->setFriction(FRICTION);
+  this->body[index]->setRollingFriction(FRICTION);
 
   this->m_dynamicsWorld->addRigidBody(body[index]);
 }

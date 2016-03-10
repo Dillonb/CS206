@@ -40,7 +40,7 @@ def SaveANN(synapses, filename):
     f.close()
 
 def Demonstrate(synapses, quiet = False):
-    cmd = ['./AppRagdollDemo']
+    cmd = ['./simulator']
     if quiet:
         cmd.append('-q')
     p = Popen(cmd, stdout=PIPE, stdin=PIPE, stderr=PIPE)

@@ -155,48 +155,48 @@ depend:
 .PHONY : depend
 
 # Convenience name for target.
-Demos/RagdollDemo/CMakeFiles/AppRagdollDemo.dir/rule:
-	cd /home/dillon/class/evorobies/bullet-2.82 && $(MAKE) -f CMakeFiles/Makefile2 Demos/RagdollDemo/CMakeFiles/AppRagdollDemo.dir/rule
-.PHONY : Demos/RagdollDemo/CMakeFiles/AppRagdollDemo.dir/rule
+Demos/RagdollDemo/CMakeFiles/simulator.dir/rule:
+	cd /home/dillon/class/evorobies/bullet-2.82 && $(MAKE) -f CMakeFiles/Makefile2 Demos/RagdollDemo/CMakeFiles/simulator.dir/rule
+.PHONY : Demos/RagdollDemo/CMakeFiles/simulator.dir/rule
 
 # Convenience name for target.
-AppRagdollDemo: Demos/RagdollDemo/CMakeFiles/AppRagdollDemo.dir/rule
+simulator: Demos/RagdollDemo/CMakeFiles/simulator.dir/rule
 
-.PHONY : AppRagdollDemo
+.PHONY : simulator
 
 # fast build rule for target.
-AppRagdollDemo/fast:
-	cd /home/dillon/class/evorobies/bullet-2.82 && $(MAKE) -f Demos/RagdollDemo/CMakeFiles/AppRagdollDemo.dir/build.make Demos/RagdollDemo/CMakeFiles/AppRagdollDemo.dir/build
-.PHONY : AppRagdollDemo/fast
+simulator/fast:
+	cd /home/dillon/class/evorobies/bullet-2.82 && $(MAKE) -f Demos/RagdollDemo/CMakeFiles/simulator.dir/build.make Demos/RagdollDemo/CMakeFiles/simulator.dir/build
+.PHONY : simulator/fast
 
 # target to build an object file
 RagdollDemo.o:
-	cd /home/dillon/class/evorobies/bullet-2.82 && $(MAKE) -f Demos/RagdollDemo/CMakeFiles/AppRagdollDemo.dir/build.make Demos/RagdollDemo/CMakeFiles/AppRagdollDemo.dir/RagdollDemo.o
+	cd /home/dillon/class/evorobies/bullet-2.82 && $(MAKE) -f Demos/RagdollDemo/CMakeFiles/simulator.dir/build.make Demos/RagdollDemo/CMakeFiles/simulator.dir/RagdollDemo.o
 .PHONY : RagdollDemo.o
 
 # target to preprocess a source file
 RagdollDemo.i:
-	cd /home/dillon/class/evorobies/bullet-2.82 && $(MAKE) -f Demos/RagdollDemo/CMakeFiles/AppRagdollDemo.dir/build.make Demos/RagdollDemo/CMakeFiles/AppRagdollDemo.dir/RagdollDemo.i
+	cd /home/dillon/class/evorobies/bullet-2.82 && $(MAKE) -f Demos/RagdollDemo/CMakeFiles/simulator.dir/build.make Demos/RagdollDemo/CMakeFiles/simulator.dir/RagdollDemo.i
 .PHONY : RagdollDemo.i
 
 # target to generate assembly for a file
 RagdollDemo.s:
-	cd /home/dillon/class/evorobies/bullet-2.82 && $(MAKE) -f Demos/RagdollDemo/CMakeFiles/AppRagdollDemo.dir/build.make Demos/RagdollDemo/CMakeFiles/AppRagdollDemo.dir/RagdollDemo.s
+	cd /home/dillon/class/evorobies/bullet-2.82 && $(MAKE) -f Demos/RagdollDemo/CMakeFiles/simulator.dir/build.make Demos/RagdollDemo/CMakeFiles/simulator.dir/RagdollDemo.s
 .PHONY : RagdollDemo.s
 
 # target to build an object file
 main.o:
-	cd /home/dillon/class/evorobies/bullet-2.82 && $(MAKE) -f Demos/RagdollDemo/CMakeFiles/AppRagdollDemo.dir/build.make Demos/RagdollDemo/CMakeFiles/AppRagdollDemo.dir/main.o
+	cd /home/dillon/class/evorobies/bullet-2.82 && $(MAKE) -f Demos/RagdollDemo/CMakeFiles/simulator.dir/build.make Demos/RagdollDemo/CMakeFiles/simulator.dir/main.o
 .PHONY : main.o
 
 # target to preprocess a source file
 main.i:
-	cd /home/dillon/class/evorobies/bullet-2.82 && $(MAKE) -f Demos/RagdollDemo/CMakeFiles/AppRagdollDemo.dir/build.make Demos/RagdollDemo/CMakeFiles/AppRagdollDemo.dir/main.i
+	cd /home/dillon/class/evorobies/bullet-2.82 && $(MAKE) -f Demos/RagdollDemo/CMakeFiles/simulator.dir/build.make Demos/RagdollDemo/CMakeFiles/simulator.dir/main.i
 .PHONY : main.i
 
 # target to generate assembly for a file
 main.s:
-	cd /home/dillon/class/evorobies/bullet-2.82 && $(MAKE) -f Demos/RagdollDemo/CMakeFiles/AppRagdollDemo.dir/build.make Demos/RagdollDemo/CMakeFiles/AppRagdollDemo.dir/main.s
+	cd /home/dillon/class/evorobies/bullet-2.82 && $(MAKE) -f Demos/RagdollDemo/CMakeFiles/simulator.dir/build.make Demos/RagdollDemo/CMakeFiles/simulator.dir/main.s
 .PHONY : main.s
 
 # Help Target
@@ -208,7 +208,7 @@ help:
 	@echo "... install"
 	@echo "... list_install_components"
 	@echo "... rebuild_cache"
-	@echo "... AppRagdollDemo"
+	@echo "... simulator"
 	@echo "... install/strip"
 	@echo "... install/local"
 	@echo "... edit_cache"
