@@ -14,7 +14,10 @@ NUM_SYNAPSES = NUM_SENSORS * NUM_MOTORS
 NUM_RUNS = 10
 NUM_GENERATIONS = 50000
 
-MUTATION_RATE = 0.05
+# Number of children to test at once
+GENERATION_SIZE=10
+
+MUTATION_RATE = 0.3
 
 def MatrixCreate(x, y):
     return zeros((x, y))
@@ -28,11 +31,10 @@ def MatrixPerturb(matrix, prob):
     return matrix
 
 def SynapsesToString(synapses):
-    ret = ''
+    rows = []
     for row in synapses:
-        for synapse in row:
-            ret += str(synapse) + ' '
-    return ret.strip()
+        rows.append(' '.join(str(synapse) for synapse in row))
+    return ' '.join(rows)
 
 def SaveANN(synapses, filename):
     f = open(filename, 'w')
@@ -50,6 +52,21 @@ def Demonstrate(synapses, quiet = False):
 def Fitness(synapses):
     """Simulate robot and return fitness"""
     return Demonstrate(synapses, True)
+
+def FitnessList(synapses_list):
+    cmd = ['./simulator', '-q']
+
+    processes = []
+    results = []
+
+    for synapses in synapses_list:
+        processes.append(Popen(cmd, stdout=PIPE, stdin=PIPE, stderr=PIPE))
+
+    for i in range(len(synapses_list)):
+        fitness, errors = processes[i].communicate(
+            input=str.encode(SynapsesToString(synapses_list[i])))
+        results.append(float(fitness))
+    return results
 
 def SetTerminalTitle(title):
     sys.stdout.write("\x1b]2;" + title + "\x07")
@@ -77,8 +94,21 @@ parentFitness = Fitness(parent)
 generations.append([parent, parentFitness])
 
 for currentGeneration in range(0,NUM_GENERATIONS):
-    child = MatrixPerturb(parent, MUTATION_RATE)
-    childFitness = Fitness(child)
+    children = []
+    for i in range(GENERATION_SIZE):
+        children.append(MatrixPerturb(parent, MUTATION_RATE))
+
+    childFitnesses = FitnessList(children)
+    childFitness = childFitnesses[0]
+
+    child = children[0]
+
+    # Don't need to check 0, that's our default
+    for i in range(1, GENERATION_SIZE):
+        if childFitnesses[i] > childFitness:
+            child = children[i]
+            childFitness = childFitnesses[i]
+
     if (childFitness > parentFitness ):
         parent = child
         parentFitness = childFitness
