@@ -15,19 +15,44 @@ NUM_RUNS = 10
 NUM_GENERATIONS = 50000
 
 # Number of children to test at once
-GENERATION_SIZE=10
+GENERATION_SIZE=4
 
-MUTATION_RATE = 0.3
+BASE_MUTATION_RATE = 0.05
+BASE_MUTATION_MAGNITUDE = 0.1
+MAX_MUTATION_MAGNITUDE = 0.8
+
+def MutationRate(failedGenerations):
+    if (failedGenerations < 10):
+        return BASE_MUTATION_RATE
+    else:
+        return BASE_MUTATION_RATE * (1 + (failedGenerations - 10) * .005)
+
+def MutationMagnitude(failedGenerations):
+    mag = 0
+    if (failedGenerations < 10):
+        mag = BASE_MUTATION_MAGNITUDE
+    else:
+        mag = BASE_MUTATION_MAGNITUDE * (1 + (failedGenerations - 10) * .005)
+
+    if mag > MAX_MUTATION_MAGNITUDE:
+        mag = MAX_MUTATION_MAGNITUDE
+
+    return mag
 
 def MatrixCreate(x, y):
     return zeros((x, y))
 
-def MatrixPerturb(matrix, prob):
+def MatrixPerturb(matrix, prob, magnitude=1):
     matrix = copy.deepcopy(matrix)
     for i in range(len(matrix)):
         for j in range(len(matrix[i])):
             if prob >= 1 or prob > random.random():
-                matrix[i][j] = (2 * random.random()) - 1
+                diff = (2 * random.random() * magnitude) - magnitude
+                matrix[i][j] = matrix[i][j] + diff
+                if (matrix[i][j] > 1):
+                    matrix[i][j] = 1
+                elif matrix[i][j] < -1:
+                    matrix[i][j] = -1
     return matrix
 
 def SynapsesToString(synapses):
@@ -93,10 +118,12 @@ generations = []
 parentFitness = Fitness(parent)
 generations.append([parent, parentFitness])
 
+failedGenerations = 0
+
 for currentGeneration in range(0,NUM_GENERATIONS):
     children = []
     for i in range(GENERATION_SIZE):
-        children.append(MatrixPerturb(parent, MUTATION_RATE))
+        children.append(MatrixPerturb(parent, MutationRate(failedGenerations), MutationMagnitude(failedGenerations)))
 
     childFitnesses = FitnessList(children)
     childFitness = childFitnesses[0]
@@ -115,10 +142,17 @@ for currentGeneration in range(0,NUM_GENERATIONS):
         #Demonstrate(parent)
         SaveANN(parent, "best.ann")
         SaveANN(parent, "fitness_" + str(parentFitness) + "_generation_" + str(currentGeneration) +  ".ann")
+        failedGenerations = 0
+    else:
+        failedGenerations += 1
 
 
-    print("%d %f %f"
-            %(currentGeneration, parentFitness, childFitness))
+    print("%d %f %f Mutation rate: %f Magnitude: %f"
+            %(currentGeneration,
+                parentFitness,
+                childFitness,
+                MutationRate(failedGenerations),
+                MutationMagnitude(currentGeneration)))
     SetTerminalTitle("Evolving: Gen " + str(currentGeneration) + " Fitness: " + str(childFitness) + " Best: " + str(parentFitness))
 
     generations.append([parent, parentFitness])
