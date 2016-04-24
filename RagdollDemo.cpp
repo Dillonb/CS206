@@ -2,6 +2,7 @@
 
 
 #include <iostream>
+#include <sstream>
 
 #include "btBulletDynamicsCommon.h"
 #include "GlutStuff.h"
@@ -11,6 +12,7 @@
 
 #include "GLDebugDrawer.h"
 #include "RagdollDemo.h"
+
 
 
 // Enrico: Shouldn't these three variables be real constants and not defines?
@@ -29,6 +31,9 @@
 
 #define FRICTION 2.0
 
+using std::cin;
+using std::cout;
+using std::endl;
 
 static RagdollDemo* ragdollDemo;
 
@@ -66,13 +71,14 @@ void RagdollDemo::initPhysics() {
   // Initialize the neural network by reading from stdin
   for (int i = 0; i < 8; i++) {
     for (int j = 0; j < 4; j++) {
-      std::cin >> weights[i][j];
+      //cin >> weights[i][j];
+      weights[i][j] = 0;
     }
   }
 
   gContactProcessedCallback = myContactProcessedCallback;
 
-  pause = false;
+  pause = true;
   oneStep = false;
   // Setup the basic world
 
@@ -151,8 +157,16 @@ void RagdollDemo::initPhysics() {
   CreateHinge(6, 0, 7, btVector3(0, 2, -1), btVector3(1, 0, 0));
   CreateHinge(7, 7, 8, btVector3(0, 2, -2.7), btVector3(1, 0, 0));
 
+
   clientResetScene();
 }
+
+/*
+void RagdollDemo::createLegAssembly(int upperIndex, int lowerIndex, int hingeIndex,
+                                    ) {
+  
+}
+*/
 
 void RagdollDemo::clientMoveAndDisplay() {
   if (graphics) {
@@ -394,12 +408,51 @@ void RagdollDemo::CreateCylinder(int index, double x, double y, double z,
   this->m_dynamicsWorld->addRigidBody(body[index]);
 }
 
+
 void RagdollDemo::CreateBox(int index, btVector3 pos, btVector3 size) {
   this->CreateBox(index, pos.x(), pos.y(), pos.z(), size.x(), size.y(), size.z());
 }
 
 void RagdollDemo::CreateCylinder(int index, btVector3 pos, btVector3 size, char axis) {
   this->CreateCylinder(index, pos.x(), pos.y(), pos.z(), size.x(), size.y(), size.z(), axis);
+}
+
+void RagdollDemo::CreateCylinderEndpoints(int index, btVector3 pt1, btVector3 pt2, double radius) {
+  btScalar l = radius;
+  // Width of a cylinder is half of its height
+  btScalar w = (pt2-pt1).length() * 0.5;
+  btScalar h = radius;
+
+  this->geom[index] = new btCylinderShape(btVector3(l, w, h));
+
+  btVector3 mid = (pt2+pt1)/2;
+
+  // Calculate rotation quaternion here
+  btVector3 reference(0,1,0);
+  btVector3 facing = (pt2 - pt1).normalize();
+  btVector3 rotAxis = reference.cross(facing).normalize();
+  btScalar rotAngle = reference.angle(facing);
+
+  btQuaternion rot;
+  rot.setRotation(rotAxis, rotAngle);
+
+  // Just use the identity centered around the midpoint
+  btTransform offset;
+  offset.setIdentity();
+  offset.setOrigin(mid);
+
+  btTransform rotation;
+  rotation.setIdentity();
+  rotation.setRotation(rot);
+
+
+  this->body[index] = localCreateRigidBody(btScalar(1.), offset * rotation, this->geom[index]);
+  this->body[index]->setUserPointer(&(IDs[index]));
+
+  this->body[index]->setFriction(FRICTION);
+  this->body[index]->setRollingFriction(FRICTION);
+
+  this->m_dynamicsWorld->addRigidBody(body[index]);
 }
 
 // Creates a hinge joint
@@ -418,7 +471,7 @@ void RagdollDemo::CreateHinge(int index, int body1, int body2,
   joints[index] = new btHingeConstraint(*body[body1], *body[body2],
                                         p1, p2,
                                         a1, a2, false);
-  joints[index]->setLimit(-45.*3.14159/180., 45.*3.14159/180.);
+  joints[index]->setLimit(-3.14159/4., 3.14159/4.);
 
   this->m_dynamicsWorld->addConstraint(joints[index], true);
 }

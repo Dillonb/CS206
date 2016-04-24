@@ -90,7 +90,7 @@ public:
 
     void CreateCylinder(int index, double x, double y, double z, double l, double w, double h, char axis);
     void CreateCylinder(int index, btVector3 pos, btVector3 size, char axis);
-
+    void CreateCylinderEndpoints(int index, btVector3 pt1, btVector3 pt2, double radius);
 
     void CreateHinge(int index, int body1, int body2,
              double x, double y, double z,
