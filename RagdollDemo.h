@@ -33,16 +33,27 @@ class btConstraintSolver;
 struct btCollisionAlgorithmCreateFunc;
 class btDefaultCollisionConfiguration;
 
+#define BAR_X_DIFF 1
+#define BAR_Y_DIFF 1
+#define BAR_Z_DIFF 1
+
+
+typedef struct bar_t {
+  int num_children;
+  bar_t* first_child;
+  bar_t* next_sibling;
+} bar;
+
 class RagdollDemo : public GlutDemoApplication
 {
 
     //ADDED
-    btRigidBody* body[9];
-    btCollisionShape* geom[9];
+    btRigidBody* body[100];
+    btCollisionShape* geom[100];
     bool pause;
-    btHingeConstraint* joints[8];
+    btHingeConstraint* joints[100];
     bool oneStep;
-    int IDs[10];
+    int IDs[100];
 
 
     int timeStep;
@@ -65,12 +76,17 @@ class RagdollDemo : public GlutDemoApplication
 
   double fitness();
 
+  btRigidBody* recurseDrawBar(int* indexCounter, int* hingeIndexCounter, bar* bar, btVector3 bottom, btVector3 top);
+
 public:
-    int touches[10];
-    btVector3 touchPoints[10];
+    int touches[100];
+    btVector3 touchPoints[100];
     void runNoGraphics();
     void init();
     bool graphics;
+
+    int numBodies;
+    int numJoints;
 
     virtual void renderme() {
         extern GLDebugDrawer gDebugDrawer;
@@ -90,12 +106,14 @@ public:
 
     void CreateCylinder(int index, double x, double y, double z, double l, double w, double h, char axis);
     void CreateCylinder(int index, btVector3 pos, btVector3 size, char axis);
-    void CreateCylinderEndpoints(int index, btVector3 pt1, btVector3 pt2, double radius);
+    btRigidBody* CreateCylinderEndpoints(int index, btVector3 pt1, btVector3 pt2, double radius);
 
     void CreateHinge(int index, int body1, int body2,
              double x, double y, double z,
              double ax, double ay, double az);
+
     void CreateHinge(int index, int body1, int body2, btVector3 pos, btVector3 axis);
+    void CreateHingeWithBody(int index, btRigidBody* body1, btRigidBody* body2, btVector3 p, btVector3 a);
 
     btVector3 flipZY(btVector3 input) {
         btScalar temp;
@@ -128,10 +146,16 @@ public:
 		return demo;
 	}
 
+  btVector3 PointWorldToLocalWithBody(btRigidBody* body, btVector3 &p) {
+    btTransform local1 = body->getCenterOfMassTransform().inverse();
+    return local1 * p;
+  }
+
     btVector3 PointWorldToLocal(int index, btVector3 &p) {
-          btTransform local1 = body[index]->getCenterOfMassTransform().inverse();
-            return local1 * p;
+      btTransform local1 = body[index]->getCenterOfMassTransform().inverse();
+      return local1 * p;
     }
+
 
     btVector3 AxisWorldToLocal(int index, btVector3 &a) {
         btTransform local1 = body[index]->getCenterOfMassTransform().inverse();
@@ -139,8 +163,13 @@ public:
         local1.setOrigin(zero);
         return local1 * a;
     }
-	
-};
 
+    btVector3 AxisWorldToLocalWithBody(btRigidBody* body, btVector3 &a) {
+      btTransform local1 = body->getCenterOfMassTransform().inverse();
+      btVector3 zero(0,0,0);
+      local1.setOrigin(zero);
+      return local1 * a;
+    }
+};
 
 #endif

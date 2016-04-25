@@ -13,6 +13,8 @@
 #include "GLDebugDrawer.h"
 #include "RagdollDemo.h"
 
+#include <cmath>
+
 
 
 // Enrico: Shouldn't these three variables be real constants and not defines?
@@ -33,9 +35,82 @@
 
 using std::cin;
 using std::cout;
+using std::cerr;
 using std::endl;
 
 static RagdollDemo* ragdollDemo;
+
+std::string vecstr(btVector3 vec) {
+  std::ostringstream oss;
+  oss << "<" << vec.x() <<"," << vec.y() << "," << vec.z() << ">";
+  return oss.str();
+}
+
+
+bar* readBarFromStream(std::istream& stream) {
+  bar* temp = new bar;
+  temp->first_child = NULL;
+  temp->next_sibling = NULL;
+
+  // Read properties from the stream
+  stream >> temp->num_children;
+  cerr << "Reading a bar with " << temp->num_children << " children from the stream." << endl;
+
+  bar* mostRecentChild = NULL;
+
+  for (int i = 0; i < temp->num_children; i++) {
+    if (mostRecentChild == NULL) {
+      temp->first_child = readBarFromStream(stream);
+      mostRecentChild = temp->first_child;
+    }
+    else {
+      mostRecentChild->next_sibling = readBarFromStream(stream);
+      mostRecentChild = mostRecentChild->next_sibling;
+    }
+  }
+
+  return temp;
+}
+
+//void RagdollDemo::CreateHingeWithBody(int index, btRigidBody* body1, btRigidBody* body2, btVector3 p, btVector3 a) {
+
+btRigidBody* RagdollDemo::recurseDrawBar(int* indexCounter, int* hingeIndexCounter, bar* bar_, btVector3 bottom, btVector3 top) {
+  btRigidBody* parentBody = CreateCylinderEndpoints(*indexCounter, bottom, top, 0.1);
+  int thisCylinderBodyIndex = *indexCounter;
+  *indexCounter++;
+
+  double spacing = (2 * M_PI) / bar_->num_children;
+
+  bar* curChild = bar_->first_child;
+  int childIndex = 0;
+
+  while (curChild != NULL) {
+    double angle = spacing * childIndex;
+    btVector3 newBottomOffset(cos(angle) * BAR_X_DIFF, -BAR_Y_DIFF, sin(angle) * BAR_Z_DIFF);
+    btVector3 newBottom = bottom + newBottomOffset;
+
+    btVector3 newTopOffset = btScalar(0.1) * (newBottom - top);
+    btVector3 newTop = bottom + newTopOffset;
+
+    btVector3 hingeLocation = bottom + btScalar(0.5) * newTopOffset;
+
+    btRigidBody* childBody = recurseDrawBar(indexCounter, hingeIndexCounter, curChild, newBottom, newTop);
+
+    btVector3 axis = (bottom - top).cross(newBottom - newTop);
+
+    cerr << vecstr(axis);
+
+    cerr << "hingeIndexCounter: " << *hingeIndexCounter << endl;
+    cerr << "hinge location: " << vecstr(hingeLocation) << " hinge axis: " << vecstr(axis) << endl;
+    CreateHingeWithBody(*hingeIndexCounter, parentBody, childBody, hingeLocation, axis);
+    *hingeIndexCounter++;
+
+    curChild = curChild->next_sibling;
+    childIndex++;
+  }
+
+  return parentBody;
+}
 
 bool myContactProcessedCallback(btManifoldPoint& cp, void* body0, void* body1) {
   int *ID1, *ID2;
@@ -67,6 +142,15 @@ void RagdollDemo::initPhysics() {
   for (int i = 0; i < 10; i++) {
     IDs[i] = i;
   }
+
+  int totalBars;
+  cin >> totalBars;
+  int treeHeight;
+  cin >> treeHeight;
+
+  bar* root = readBarFromStream(cin);
+
+
 
   // Initialize the neural network by reading from stdin
   for (int i = 0; i < 8; i++) {
@@ -103,6 +187,7 @@ void RagdollDemo::initPhysics() {
 
 
 
+
   // Setup a big ground box
   {
     btCollisionShape* groundShape = new btBoxShape(btVector3(btScalar(200.),btScalar(10.),btScalar(200.)));
@@ -124,20 +209,33 @@ void RagdollDemo::initPhysics() {
 
   }
 
+
+  int* indexCounter = new int;
+  int* hingeIndexCounter = new int;
+  *indexCounter = 0;
+  *hingeIndexCounter = 0;
+  recurseDrawBar(indexCounter, hingeIndexCounter, root, btVector3(0, treeHeight - 1, 0), btVector3(0, treeHeight, 0));
+  delete indexCounter;
+  delete hingeIndexCounter;
+
+  //CreateCylinderEndpoints(0, btVector3(0,0,0), btVector3(1,1,1), .2);
+
   //Spawn one ragdoll
   //btVector3 startOffset(1,0.5,0);
   //spawnRagdoll(startOffset);
   //startOffset.setValue(-1,0.5,0);
   //spawnRagdoll(startOffset);
 
+  /*
   // Robot's body
   CreateBox(0, btVector3(0, 2, 0), btVector3(1, 0.2, 1));
 
   // Leg
   CreateCylinder(1, btVector3(1.8, 2, 0), btVector3(.9, .2, .2), 'x');
   CreateCylinder(2, btVector3(2.7, 1, 0), btVector3(0.2, .9, .2), 'y');
-  CreateHinge(0, 0, 1, btVector3(1, 2, 0), btVector3(0, 0, 1));
-  CreateHinge(1, 1, 2, btVector3(2.7, 2, 0), btVector3(0, 0, 1));
+  CreateHinge(0, 0, 1, btVector3(1, 2, 0), btVector3(0, 0, -1));
+  CreateHinge(1, 1, 2, btVector3(2.7, 2, 0), btVector3(0, 0, -1));
+  /*
 
   // Leg
   CreateCylinder(3, btVector3(-1.8, 2, 0), btVector3(.9, .2, .2), 'x');
@@ -153,19 +251,21 @@ void RagdollDemo::initPhysics() {
 
   // Leg
   CreateCylinder(7, btVector3(0, 2, -1.8), btVector3(0.2, 0.9, 0.9), 'z');
-  CreateCylinder(8, btVector3(0, 1, -2.7), btVector3(0.2, 0.9, 0.2), 'y');
+  //CreateCylinder(8, btVector3(0, 1, -2.7), btVector3(0.2, 0.9, 0.2), 'y');
+  CreateCylinderEndpoints(8, btVector3(0,5,0), btVector3(10,10,10), 0.2);
   CreateHinge(6, 0, 7, btVector3(0, 2, -1), btVector3(1, 0, 0));
   CreateHinge(7, 7, 8, btVector3(0, 2, -2.7), btVector3(1, 0, 0));
+  */
 
 
   clientResetScene();
 }
 
 /*
-void RagdollDemo::createLegAssembly(int upperIndex, int lowerIndex, int hingeIndex,
-                                    ) {
+  void RagdollDemo::createLegAssembly(int upperIndex, int lowerIndex, int hingeIndex,
+  ) {
   
-}
+  }
 */
 
 void RagdollDemo::clientMoveAndDisplay() {
@@ -199,7 +299,9 @@ void RagdollDemo::clientMoveAndDisplay() {
         m_dynamicsWorld->stepSimulation(timing);
 
         // Run the neural net every 10 timesteps
-        if (!(timeStep % 10)) {
+        // Disabled completely for now
+        // TODO: update this so it works with a dynamic body
+        if (!(timeStep % 10) && false) {
           for (int i = 0; i < 8; i++) {
             double motorCommand = 0.0;
 
@@ -220,7 +322,8 @@ void RagdollDemo::clientMoveAndDisplay() {
         // Increment timeStep
         timeStep++;
 
-        if (timeStep == 1000) {
+        // TODO: Make it exit and print fitness again
+        if (timeStep == 1000 && false) {
 
           // Fitness = distance traveled "into the screen"
           printf("%f\n", fitness());
@@ -405,7 +508,7 @@ void RagdollDemo::CreateCylinder(int index, double x, double y, double z,
   this->body[index]->setFriction(FRICTION);
   this->body[index]->setRollingFriction(FRICTION);
 
-  this->m_dynamicsWorld->addRigidBody(body[index]);
+  this->m_dynamicsWorld->addRigidBody(this->body[index]);
 }
 
 
@@ -417,24 +520,37 @@ void RagdollDemo::CreateCylinder(int index, btVector3 pos, btVector3 size, char 
   this->CreateCylinder(index, pos.x(), pos.y(), pos.z(), size.x(), size.y(), size.z(), axis);
 }
 
-void RagdollDemo::CreateCylinderEndpoints(int index, btVector3 pt1, btVector3 pt2, double radius) {
+btRigidBody* RagdollDemo::CreateCylinderEndpoints(int index, btVector3 pt1, btVector3 pt2, double radius) {
+  cerr << "Creating a cylinder by endpoints." << endl
+       << "from, to: " << vecstr(pt1) << " " << vecstr(pt2) << endl
+       << "index: " << index << " radius: " << radius << endl;
   btScalar l = radius;
   // Width of a cylinder is half of its height
   btScalar w = (pt2-pt1).length() * 0.5;
   btScalar h = radius;
-
   this->geom[index] = new btCylinderShape(btVector3(l, w, h));
 
   btVector3 mid = (pt2+pt1)/2;
 
   // Calculate rotation quaternion here
   btVector3 reference(0,1,0);
+  cerr << vecstr((pt2-pt1)) << endl;
   btVector3 facing = (pt2 - pt1).normalize();
-  btVector3 rotAxis = reference.cross(facing).normalize();
-  btScalar rotAngle = reference.angle(facing);
 
-  btQuaternion rot;
-  rot.setRotation(rotAxis, rotAngle);
+  cerr << vecstr((reference.cross(facing))) << endl;
+  btVector3 rotAxis = reference.cross(facing);
+
+  btQuaternion rot = btQuaternion::getIdentity();
+  if (rotAxis.length() != 0) {
+    rotAxis = rotAxis.normalize();
+    btScalar rotAngle = reference.angle(facing);
+
+    rot.setRotation(rotAxis, rotAngle);
+  }
+  else {
+    cerr << "NO ROTATION!" << endl;
+  }
+
 
   // Just use the identity centered around the midpoint
   btTransform offset;
@@ -445,14 +561,18 @@ void RagdollDemo::CreateCylinderEndpoints(int index, btVector3 pt1, btVector3 pt
   rotation.setIdentity();
   rotation.setRotation(rot);
 
-
+  cerr << "About to localcreaterigidbody..."<<endl;
   this->body[index] = localCreateRigidBody(btScalar(1.), offset * rotation, this->geom[index]);
+  cerr << "done"<<endl;
   this->body[index]->setUserPointer(&(IDs[index]));
 
   this->body[index]->setFriction(FRICTION);
   this->body[index]->setRollingFriction(FRICTION);
-
+  cerr << "Adding rigid body"<<endl;
   this->m_dynamicsWorld->addRigidBody(body[index]);
+  cerr << "done" << endl;
+
+  return body[index];
 }
 
 // Creates a hinge joint
@@ -474,6 +594,24 @@ void RagdollDemo::CreateHinge(int index, int body1, int body2,
   joints[index]->setLimit(-3.14159/4., 3.14159/4.);
 
   this->m_dynamicsWorld->addConstraint(joints[index], true);
+}
+
+void RagdollDemo::CreateHingeWithBody(int index, btRigidBody* body1, btRigidBody* body2, btVector3 p, btVector3 a) {
+  btVector3 p1 = PointWorldToLocalWithBody(body1, p);
+  btVector3 p2 = PointWorldToLocalWithBody(body2, p);
+
+  btVector3 a1 = AxisWorldToLocalWithBody(body1, a);
+  btVector3 a2 = AxisWorldToLocalWithBody(body2, a);
+
+  cerr << vecstr(p1) << vecstr(p2) << vecstr(a1) << vecstr(a2) << endl;
+
+  joints[index] = new btHingeConstraint(*body1, *body2,
+                                        p1, p2,
+                                        a1, a2, false);
+  //joints[index]->setLimit(-3.14159/8., 3.14159/8.);
+
+  // TODO: change this false to true if you want to disable collisions between the two objects...
+  this->m_dynamicsWorld->addConstraint(joints[index], false);
 }
 
 void RagdollDemo::CreateHinge(int index, int body1, int body2, btVector3 pos, btVector3 axis) {
