@@ -59,7 +59,17 @@ n = Node(
             ]),
         Node([
             Node(),
-            Node()
+            Node([
+                Node([
+                    Node([
+                        Node([
+                            Node([
+                                Node()
+                            ])
+                        ])
+                    ])
+                ])
+            ])
         ])
     ])
 

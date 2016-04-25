@@ -114,12 +114,12 @@ btRigidBody* RagdollDemo::recurseDrawBar(int* indexCounter, int* hingeIndexCount
 
 bool myContactProcessedCallback(btManifoldPoint& cp, void* body0, void* body1) {
   int *ID1, *ID2;
-  btCollisionObject* o1 = static_cast<btCollisionObject*>(body0); 
+  btCollisionObject* o1 = static_cast<btCollisionObject*>(body0);
   btCollisionObject* o2 = static_cast<btCollisionObject*>(body1);
-  int groundID = 9;
+  int groundID = 99;
 
   // Get the numeric IDs of the two bodies that just contacted each other
-  ID1 = static_cast<int*>(o1->getUserPointer()); 
+  ID1 = static_cast<int*>(o1->getUserPointer());
   ID2 = static_cast<int*>(o2->getUserPointer());
 
   // Set the corresponding touch sensors to true
@@ -139,7 +139,7 @@ void RagdollDemo::initPhysics() {
 
   timeStep = 0;
 
-  for (int i = 0; i < 10; i++) {
+  for (int i = 0; i < 100; i++) {
     IDs[i] = i;
   }
 
@@ -201,7 +201,7 @@ void RagdollDemo::initPhysics() {
     btCollisionObject* fixedGround = new btCollisionObject();
     fixedGround->setCollisionShape(groundShape);
     fixedGround->setWorldTransform(groundTransform);
-    fixedGround->setUserPointer(&(IDs[9]));
+    fixedGround->setUserPointer(&(IDs[99]));
     m_dynamicsWorld->addCollisionObject(fixedGround);
 #else
     localCreateRigidBody(btScalar(0.),groundTransform,groundShape);
@@ -591,7 +591,7 @@ void RagdollDemo::CreateHinge(int index, int body1, int body2,
   joints[index] = new btHingeConstraint(*body[body1], *body[body2],
                                         p1, p2,
                                         a1, a2, false);
-  joints[index]->setLimit(-3.14159/4., 3.14159/4.);
+  //joints[index]->setLimit(-3.14159/4., 3.14159/4.);
 
   this->m_dynamicsWorld->addConstraint(joints[index], true);
 }
