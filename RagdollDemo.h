@@ -19,6 +19,8 @@ Written by: Marten Svanfeldt
 #ifndef RAGDOLLDEMO_H
 #define RAGDOLLDEMO_H
 
+#define MAX_BODIES 100
+
 #include "GlutDemoApplication.h"
 #include "LinearMath/btAlignedObjectArray.h"
 #include "BulletDynamics/ConstraintSolver/btHingeConstraint.h"
@@ -48,12 +50,12 @@ class RagdollDemo : public GlutDemoApplication
 {
 
     //ADDED
-    btRigidBody* body[100];
-    btCollisionShape* geom[100];
+    btRigidBody* body[MAX_BODIES];
+    btCollisionShape* geom[MAX_BODIES];
     bool pause;
-    btHingeConstraint* joints[100];
+    btHingeConstraint* joints[MAX_BODIES];
     bool oneStep;
-    int IDs[100];
+    int IDs[MAX_BODIES];
 
 
     int timeStep;
@@ -79,8 +81,8 @@ class RagdollDemo : public GlutDemoApplication
   btRigidBody* recurseDrawBar(int* indexCounter, int* hingeIndexCounter, bar* bar, btVector3 bottom, btVector3 top);
 
 public:
-    int touches[100];
-    btVector3 touchPoints[100];
+    int touches[MAX_BODIES];
+    btVector3 touchPoints[MAX_BODIES];
     void runNoGraphics();
     void init();
     bool graphics;
@@ -94,7 +96,7 @@ public:
         GlutDemoApplication::renderme();
         // Make a circle with a 0.9 radius at (0,0,0)
         // with RGB color (1,0,0)
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < MAX_BODIES; i++) {
             if (touches[i]) {
                 gDebugDrawer.drawSphere(touchPoints[i], 0.2, btVector3(1., 0., 0.));
             }

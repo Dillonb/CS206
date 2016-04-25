@@ -139,7 +139,7 @@ void RagdollDemo::initPhysics() {
 
   timeStep = 0;
 
-  for (int i = 0; i < 100; i++) {
+  for (int i = 0; i < MAX_BODIES; i++) {
     IDs[i] = i;
   }
 
@@ -292,7 +292,8 @@ void RagdollDemo::clientMoveAndDisplay() {
       }
       if (!pause) {
         // Set all touch sensors to 0
-        for (int i = 0; i < 10; i++) {
+        // TODO: only loop to number of actual bodies we have
+        for (int i = 0; i < MAX_BODIES; i++) {
           touches[i] = 0;
         }
 
@@ -547,9 +548,6 @@ btRigidBody* RagdollDemo::CreateCylinderEndpoints(int index, btVector3 pt1, btVe
 
     rot.setRotation(rotAxis, rotAngle);
   }
-  else {
-    cerr << "NO ROTATION!" << endl;
-  }
 
 
   // Just use the identity centered around the midpoint
@@ -561,16 +559,12 @@ btRigidBody* RagdollDemo::CreateCylinderEndpoints(int index, btVector3 pt1, btVe
   rotation.setIdentity();
   rotation.setRotation(rot);
 
-  cerr << "About to localcreaterigidbody..."<<endl;
   this->body[index] = localCreateRigidBody(btScalar(1.), offset * rotation, this->geom[index]);
-  cerr << "done"<<endl;
   this->body[index]->setUserPointer(&(IDs[index]));
 
   this->body[index]->setFriction(FRICTION);
   this->body[index]->setRollingFriction(FRICTION);
-  cerr << "Adding rigid body"<<endl;
   this->m_dynamicsWorld->addRigidBody(body[index]);
-  cerr << "done" << endl;
 
   return body[index];
 }
