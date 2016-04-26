@@ -3,6 +3,7 @@
 import random
 import copy
 from subprocess import Popen, PIPE, STDOUT
+from multiprocessing import Pool
 
 class Node:
     def __init__(self, children=None):
@@ -104,12 +105,12 @@ class Robot:
 
         # 5% chance to add a dangling bar
         if random.random() <= 0.05:
-            print("Adding a dangling bar")
+            #print("Adding a dangling bar")
             new.addDanglingBar()
 
         # 5% chance to remove a dangling bar
         if random.random() <= 0.05:
-            print("Removing a dangling bar")
+            #print("Removing a dangling bar")
             new.removeDanglingBar()
 
         # Always have a 3% chance to change each synaptic weight
@@ -120,14 +121,19 @@ class Robot:
                 weightsChanged+=1
                 new.ann[i] = random.random()
 
-        print("Changed %d syaptic weights"%weightsChanged)
+        #print("Changed %d syaptic weights"%weightsChanged)
 
         return new
+
+    def getChildren(self, numChildren):
+        children = []
+        for i in range(0, numChildren):
+            children.append(self.mutate())
+        return children
 
     fitnessMemo = None
     def fitness(self):
         if self.fitnessMemo is None:
-            print("Calculating fitness....")
             cmd = ['./simulator', '-q']
 
             p = Popen(cmd, stdout=PIPE, stdin=PIPE, stderr=PIPE)
@@ -140,18 +146,52 @@ class Robot:
 
 GENERATIONS = 100000
 
-parent = Robot()
-parentFitness = parent.fitness()
+POPULATION_SIZE = 100
+NUM_MOST_FIT = 10
+NUM_CHILDREN_PER = 10
+
+THREADS = 9
+
+population = []
+for i in range(0, POPULATION_SIZE):
+    population.append(Robot())
+
+top_fitness = 0
+
+def fitnessOf(robot):
+    return robot.fitness()
 
 for generation in range(1, GENERATIONS + 1):
-    child = parent.mutate()
-    childFitness = child.fitness()
     print("====================GENERATION %d=========================="%generation)
-    print("%f => %f"%(parentFitness, childFitness))
-    if childFitness > parentFitness:
-        parent = child
-        parentFitness = childFitness
-        f = open("best.robot", "w")
-        f.write(parent.encode())
-        f.close()
 
+    print("Finding fitness values of population...")
+
+    # Create memoization results of fitness() in parallel
+    with Pool(processes=THREADS) as pool:
+        pool.map(fitnessOf, population)
+
+    # Sort the population by fitness, highest first
+    population.sort(key=lambda robot: robot.fitness(), reverse=True)
+    most_fit = population[:10]
+
+    if most_fit[0].fitness() > top_fitness:
+        print("New best fitness! %f => %f"%(top_fitness, most_fit[0].fitness()))
+        top_fitness = most_fit[0].fitness()
+
+        f = open("best.robot", "w")
+        f.write(most_fit[0].encode())
+        f.close()
+    else:
+        print("No new best.")
+
+    print("Best robot has %d body parts."%(1 + most_fit[0].root.num_children_deep()))
+
+    print("Top 10 fitness values: " + " ".join([str(robot.fitness()) for robot in most_fit]))
+
+    new_population = copy.copy(most_fit)
+
+    print ("Mutating new children for next generation...")
+    for robot in most_fit:
+        new_population += robot.getChildren(NUM_CHILDREN_PER)
+
+    population = new_population
