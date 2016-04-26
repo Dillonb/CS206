@@ -1,5 +1,18 @@
 #!/usr/bin/env python3
 
+# Constants
+GENERATIONS = 100000
+
+POPULATION_SIZE = 100
+NUM_MOST_FIT = 10
+NUM_CHILDREN_PER = 10
+
+THREADS = 9
+
+ADD_BAR_RATE = 0.1
+REMOVE_BAR_RATE = 0.05
+CHANGE_SYNAPTIC_WEIGHT_RATE=0.03
+
 import random
 import copy
 from subprocess import Popen, PIPE, STDOUT
@@ -75,8 +88,9 @@ class Node:
 
 class Robot:
     def __init__(self):
-        self.root = Node()
+        self.root = Node([Node([Node()])])
         self.randomizeANN()
+        self.fitnessMemo = None
 
     def randomizeANN(self):
         self.ann = []
@@ -103,13 +117,11 @@ class Robot:
         new = copy.deepcopy(self)
         new.fitnessMemo = None
 
-        # 5% chance to add a dangling bar
-        if random.random() <= 0.05:
+        if random.random() <= ADD_BAR_RATE:
             #print("Adding a dangling bar")
             new.addDanglingBar()
 
-        # 5% chance to remove a dangling bar
-        if random.random() <= 0.05:
+        if random.random() <= REMOVE_BAR_RATE:
             #print("Removing a dangling bar")
             new.removeDanglingBar()
 
@@ -117,7 +129,7 @@ class Robot:
         weightsChanged = 0
 
         for i in range(0, len(new.ann)):
-            if random.random() <= 0.03:
+            if random.random() <= CHANGE_SYNAPTIC_WEIGHT_RATE:
                 weightsChanged+=1
                 new.ann[i] = random.random()
 
@@ -131,7 +143,6 @@ class Robot:
             children.append(self.mutate())
         return children
 
-    fitnessMemo = None
     def fitness(self):
         if self.fitnessMemo is None:
             cmd = ['./simulator', '-q']
@@ -144,22 +155,15 @@ class Robot:
         return self.fitnessMemo
 
 
-GENERATIONS = 100000
-
-POPULATION_SIZE = 100
-NUM_MOST_FIT = 10
-NUM_CHILDREN_PER = 10
-
-THREADS = 9
-
 population = []
 for i in range(0, POPULATION_SIZE):
     population.append(Robot())
 
 top_fitness = 0
 
-def fitnessOf(robot):
-    return robot.fitness()
+def calculateFitnessMemo(robot):
+    robot.fitness()
+    return robot
 
 for generation in range(1, GENERATIONS + 1):
     print("====================GENERATION %d=========================="%generation)
@@ -168,7 +172,7 @@ for generation in range(1, GENERATIONS + 1):
 
     # Create memoization results of fitness() in parallel
     with Pool(processes=THREADS) as pool:
-        pool.map(fitnessOf, population)
+        population = pool.map(calculateFitnessMemo, population)
 
     # Sort the population by fitness, highest first
     population.sort(key=lambda robot: robot.fitness(), reverse=True)
