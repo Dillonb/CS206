@@ -27,6 +27,8 @@ Written by: Marten Svanfeldt
 #include "BulletCollision/NarrowPhaseCollision/btManifoldPoint.h"
 #include "GLDebugDrawer.h"
 
+#include <iostream>
+
 class btBroadphaseInterface;
 class btCollisionShape;
 class btOverlappingPairCache;
@@ -50,17 +52,21 @@ class RagdollDemo : public GlutDemoApplication
 {
 
     //ADDED
-    btRigidBody* body[MAX_BODIES];
-    btCollisionShape* geom[MAX_BODIES];
+    btRigidBody* body[MAX_BODIES + 1];
+    btCollisionShape* geom[MAX_BODIES + 1];
     bool pause;
     btHingeConstraint* joints[MAX_BODIES];
     bool oneStep;
-    int IDs[MAX_BODIES];
+    int IDs[MAX_BODIES + 1];
 
 
     int timeStep;
 
-    double weights[8][4];
+    double weights[MAX_BODIES - 1][MAX_BODIES];
+
+    int totalBars;
+    int totalJoints;
+    int treeHeight;
 
     void ActuateJoint(int jointIndex, double desiredAngle, double jointOffset, double timeStep);
 
@@ -68,21 +74,21 @@ class RagdollDemo : public GlutDemoApplication
 	//keep the collision shapes, for deletion/cleanup
 	btAlignedObjectArray<btCollisionShape*>	m_collisionShapes;
 
-	btBroadphaseInterface*	m_broadphase;
+  btBroadphaseInterface*	m_broadphase;
 
-	btCollisionDispatcher*	m_dispatcher;
+  btCollisionDispatcher*	m_dispatcher;
 
-	btConstraintSolver*	m_solver;
+  btConstraintSolver*	m_solver;
 
-	btDefaultCollisionConfiguration* m_collisionConfiguration;
+  btDefaultCollisionConfiguration* m_collisionConfiguration;
 
   double fitness();
 
-  btRigidBody* recurseDrawBar(int* indexCounter, int* hingeIndexCounter, bar* bar, btVector3 bottom, btVector3 top);
+  btRigidBody* recurseDrawBar(int& indexCounter, int& hingeIndexCounter, bar* bar, btVector3 bottom, btVector3 top);
 
 public:
-    int touches[MAX_BODIES];
-    btVector3 touchPoints[MAX_BODIES];
+    int touches[MAX_BODIES + 1];
+    btVector3 touchPoints[MAX_BODIES + 1];
     void runNoGraphics();
     void init();
     bool graphics;
@@ -98,7 +104,7 @@ public:
         // with RGB color (1,0,0)
         for (int i = 0; i < MAX_BODIES; i++) {
             if (touches[i]) {
-                gDebugDrawer.drawSphere(touchPoints[i], 0.2, btVector3(1., 0., 0.));
+              gDebugDrawer.drawSphere(touchPoints[i], 0.2, btVector3(1., 0., 0.));
             }
         }
     }

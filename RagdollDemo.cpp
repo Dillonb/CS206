@@ -54,7 +54,6 @@ bar* readBarFromStream(std::istream& stream) {
 
   // Read properties from the stream
   stream >> temp->num_children;
-  cerr << "Reading a bar with " << temp->num_children << " children from the stream." << endl;
 
   bar* mostRecentChild = NULL;
 
@@ -74,10 +73,10 @@ bar* readBarFromStream(std::istream& stream) {
 
 //void RagdollDemo::CreateHingeWithBody(int index, btRigidBody* body1, btRigidBody* body2, btVector3 p, btVector3 a) {
 
-btRigidBody* RagdollDemo::recurseDrawBar(int* indexCounter, int* hingeIndexCounter, bar* bar_, btVector3 bottom, btVector3 top) {
-  btRigidBody* parentBody = CreateCylinderEndpoints(*indexCounter, bottom, top, 0.1);
-  int thisCylinderBodyIndex = *indexCounter;
-  *indexCounter++;
+btRigidBody* RagdollDemo::recurseDrawBar(int& indexCounter, int& hingeIndexCounter, bar* bar_, btVector3 bottom, btVector3 top) {
+  btRigidBody* parentBody = CreateCylinderEndpoints(indexCounter, bottom, top, 0.08);
+  int thisCylinderBodyIndex = indexCounter;
+  indexCounter++;
 
   double spacing = (2 * M_PI) / bar_->num_children;
 
@@ -98,12 +97,9 @@ btRigidBody* RagdollDemo::recurseDrawBar(int* indexCounter, int* hingeIndexCount
 
     btVector3 axis = (bottom - top).cross(newBottom - newTop);
 
-    cerr << vecstr(axis);
 
-    cerr << "hingeIndexCounter: " << *hingeIndexCounter << endl;
-    cerr << "hinge location: " << vecstr(hingeLocation) << " hinge axis: " << vecstr(axis) << endl;
-    CreateHingeWithBody(*hingeIndexCounter, parentBody, childBody, hingeLocation, axis);
-    *hingeIndexCounter++;
+    CreateHingeWithBody(hingeIndexCounter, parentBody, childBody, hingeLocation, axis);
+    hingeIndexCounter++;
 
     curChild = curChild->next_sibling;
     childIndex++;
@@ -116,7 +112,7 @@ bool myContactProcessedCallback(btManifoldPoint& cp, void* body0, void* body1) {
   int *ID1, *ID2;
   btCollisionObject* o1 = static_cast<btCollisionObject*>(body0);
   btCollisionObject* o2 = static_cast<btCollisionObject*>(body1);
-  int groundID = 99;
+  int groundID = MAX_BODIES; // array size is MAX_BODIES + 1
 
   // Get the numeric IDs of the two bodies that just contacted each other
   ID1 = static_cast<int*>(o1->getUserPointer());
@@ -139,30 +135,36 @@ void RagdollDemo::initPhysics() {
 
   timeStep = 0;
 
-  for (int i = 0; i < MAX_BODIES; i++) {
+  for (int i = 0; i <= MAX_BODIES; i++) {
     IDs[i] = i;
   }
 
-  int totalBars;
+  for (int i = 0; i <= MAX_BODIES; i++) {
+    touches[i] = 0;
+  }
+
+  // Read some metadata
   cin >> totalBars;
-  int treeHeight;
+  if (totalBars > MAX_BODIES) {
+    cerr << "Too many bars! Received: " << totalBars << " Max:" << MAX_BODIES << endl;
+    exit(1);
+  }
+  this->totalJoints = this->totalBars - 1;
   cin >> treeHeight;
 
+  // Read the robot's body
   bar* root = readBarFromStream(cin);
 
-
-
   // Initialize the neural network by reading from stdin
-  for (int i = 0; i < 8; i++) {
-    for (int j = 0; j < 4; j++) {
-      //cin >> weights[i][j];
-      weights[i][j] = 0;
+  for (int i = 0; i < MAX_BODIES - 1; i++) {
+    for (int j = 0; j < MAX_BODIES; j++) {
+      cin >> weights[i][j];
     }
   }
 
   gContactProcessedCallback = myContactProcessedCallback;
 
-  pause = true;
+  pause = false;
   oneStep = false;
   // Setup the basic world
 
@@ -186,8 +188,6 @@ void RagdollDemo::initPhysics() {
   //m_dynamicsWorld->getDispatchInfo().m_convexConservativeDistanceThreshold = 0.01f;
 
 
-
-
   // Setup a big ground box
   {
     btCollisionShape* groundShape = new btBoxShape(btVector3(btScalar(200.),btScalar(10.),btScalar(200.)));
@@ -201,7 +201,7 @@ void RagdollDemo::initPhysics() {
     btCollisionObject* fixedGround = new btCollisionObject();
     fixedGround->setCollisionShape(groundShape);
     fixedGround->setWorldTransform(groundTransform);
-    fixedGround->setUserPointer(&(IDs[99]));
+    fixedGround->setUserPointer(&(IDs[MAX_BODIES])); // Array size is MAX_BODIES + 1
     m_dynamicsWorld->addCollisionObject(fixedGround);
 #else
     localCreateRigidBody(btScalar(0.),groundTransform,groundShape);
@@ -210,13 +210,9 @@ void RagdollDemo::initPhysics() {
   }
 
 
-  int* indexCounter = new int;
-  int* hingeIndexCounter = new int;
-  *indexCounter = 0;
-  *hingeIndexCounter = 0;
+  int indexCounter = 0;
+  int hingeIndexCounter = 0;
   recurseDrawBar(indexCounter, hingeIndexCounter, root, btVector3(0, treeHeight - 1, 0), btVector3(0, treeHeight, 0));
-  delete indexCounter;
-  delete hingeIndexCounter;
 
   //CreateCylinderEndpoints(0, btVector3(0,0,0), btVector3(1,1,1), .2);
 
@@ -292,22 +288,24 @@ void RagdollDemo::clientMoveAndDisplay() {
       }
       if (!pause) {
         // Set all touch sensors to 0
-        // TODO: only loop to number of actual bodies we have
-        for (int i = 0; i < MAX_BODIES; i++) {
+        for (int i = 0; i < this->totalBars; i++) {
           touches[i] = 0;
         }
+        this->touches[MAX_BODIES] = 0;
+
+
 
         m_dynamicsWorld->stepSimulation(timing);
 
         // Run the neural net every 10 timesteps
         // Disabled completely for now
         // TODO: update this so it works with a dynamic body
-        if (!(timeStep % 10) && false) {
-          for (int i = 0; i < 8; i++) {
+        if (!(timeStep % 10)) {
+          for (int i = 0; i < this->totalJoints; i++) {
             double motorCommand = 0.0;
 
             // Multiply the applicable touch sensor by the weight of each neuron for that leg
-            for (int j = 0; j < 4; j++) {
+            for (int j = 0; j < this->totalBars; j++) {
               motorCommand += touches[i] * weights[i][j];
             }
 
@@ -317,14 +315,14 @@ void RagdollDemo::clientMoveAndDisplay() {
             motorCommand *= 45;
 
             // Send the actuation to the applicable motor
-            ActuateJoint(i, motorCommand, -90, timing); 
+            ActuateJoint(i, motorCommand, -90, timing);
           }
         }
         // Increment timeStep
         timeStep++;
 
         // TODO: Make it exit and print fitness again
-        if (timeStep == 1000 && false) {
+        if (timeStep == 1000) {
 
           // Fitness = distance traveled "into the screen"
           printf("%f\n", fitness());
@@ -356,7 +354,7 @@ void RagdollDemo::clientMoveAndDisplay() {
 }
 
 void RagdollDemo::runNoGraphics() {
-  while (timeStep < 1001) {
+  while (timeStep <= 1000) {
     clientMoveAndDisplay();
   }
 }
@@ -522,9 +520,6 @@ void RagdollDemo::CreateCylinder(int index, btVector3 pos, btVector3 size, char 
 }
 
 btRigidBody* RagdollDemo::CreateCylinderEndpoints(int index, btVector3 pt1, btVector3 pt2, double radius) {
-  cerr << "Creating a cylinder by endpoints." << endl
-       << "from, to: " << vecstr(pt1) << " " << vecstr(pt2) << endl
-       << "index: " << index << " radius: " << radius << endl;
   btScalar l = radius;
   // Width of a cylinder is half of its height
   btScalar w = (pt2-pt1).length() * 0.5;
@@ -535,10 +530,8 @@ btRigidBody* RagdollDemo::CreateCylinderEndpoints(int index, btVector3 pt1, btVe
 
   // Calculate rotation quaternion here
   btVector3 reference(0,1,0);
-  cerr << vecstr((pt2-pt1)) << endl;
   btVector3 facing = (pt2 - pt1).normalize();
 
-  cerr << vecstr((reference.cross(facing))) << endl;
   btVector3 rotAxis = reference.cross(facing);
 
   btQuaternion rot = btQuaternion::getIdentity();
@@ -597,12 +590,11 @@ void RagdollDemo::CreateHingeWithBody(int index, btRigidBody* body1, btRigidBody
   btVector3 a1 = AxisWorldToLocalWithBody(body1, a);
   btVector3 a2 = AxisWorldToLocalWithBody(body2, a);
 
-  cerr << vecstr(p1) << vecstr(p2) << vecstr(a1) << vecstr(a2) << endl;
 
   joints[index] = new btHingeConstraint(*body1, *body2,
                                         p1, p2,
                                         a1, a2, false);
-  //joints[index]->setLimit(-3.14159/8., 3.14159/8.);
+  joints[index]->setLimit(-M_PI/7., M_PI/7.);
 
   // TODO: change this false to true if you want to disable collisions between the two objects...
   this->m_dynamicsWorld->addConstraint(joints[index], false);
@@ -619,7 +611,9 @@ void RagdollDemo::ActuateJoint(int jointIndex, double desiredAngle, double joint
   btHingeConstraint* joint = this->joints[jointIndex];
 
   joint->setMotorTarget(btScalar(desiredAngle), timeStep);
-  joint->setMaxMotorImpulse(btScalar(1.5));
+  joint->setMaxMotorImpulse(btScalar(10));
   joint->enableMotor(true);
+
+  std::pair<int, int> thePair;
 }
 
