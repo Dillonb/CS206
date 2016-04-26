@@ -4,3 +4,4 @@ AppRagdollDemo
 simulator
 *.includecache
 *.ann
+*.robot
