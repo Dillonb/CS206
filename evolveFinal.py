@@ -88,7 +88,7 @@ class Node:
 
 class Robot:
     def __init__(self):
-        self.root = Node([Node([Node()])])
+        self.root = Node()
         self.randomizeANN()
         self.fitnessMemo = None
 
