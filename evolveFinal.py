@@ -196,7 +196,7 @@ for generation in range(1, GENERATIONS + 1):
 
     # Sort the population by fitness, highest first
     population.sort(key=lambda robot: robot.fitness(), reverse=True)
-    most_fit = population[:10]
+    most_fit = population[:NUM_MOST_FIT]
 
     if most_fit[0].fitness() > top_fitness:
         print("New best fitness! %f => %f"%(top_fitness, most_fit[0].fitness()))
