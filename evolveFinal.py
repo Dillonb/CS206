@@ -3,7 +3,7 @@
 # Constants
 GENERATIONS = 100000
 
-POPULATION_SIZE = 100
+INITIAL_POPULATION_SIZE = 100
 NUM_MOST_FIT = 10
 NUM_CHILDREN_PER = 10
 
@@ -88,9 +88,27 @@ class Node:
 
 class Robot:
     def __init__(self):
-        self.root = Node()
+        self.root = Node([Node()])
         self.randomizeANN()
         self.fitnessMemo = None
+
+    def __eq__(self, other):
+        return self.minimalencode() == other.minimalencode()
+
+    def __hash__(self):
+        return self.minimalencode().__hash__()
+
+    def get_active_ann(self):
+        active_ann = []
+        numnodes = self.root.num_children_deep() + 1
+        for i in range(0, numnodes - 1):
+            for j in range(0, numnodes):
+                index = i * 98 + j
+                active_ann.append(self.ann[index])
+        return active_ann
+
+    def minimalencode(self):
+        return "%s %s"%(self.root.encode(), " ".join([str(x) for x in self.get_active_ann()]))
 
     def randomizeANN(self):
         self.ann = []
@@ -156,8 +174,10 @@ class Robot:
 
 
 population = []
-for i in range(0, POPULATION_SIZE):
+for i in range(0, INITIAL_POPULATION_SIZE):
     population.append(Robot())
+
+population = list(set(population))
 
 top_fitness = 0
 
@@ -194,8 +214,14 @@ for generation in range(1, GENERATIONS + 1):
 
     new_population = copy.copy(most_fit)
 
-    print ("Mutating new children for next generation...")
-    for robot in most_fit:
-        new_population += robot.getChildren(NUM_CHILDREN_PER)
+    print ("Mutating new unique children for next generation...")
+    while len(new_population) < len(most_fit) * NUM_CHILDREN_PER:
+        for robot in most_fit:
+            new_population += robot.getChildren(NUM_CHILDREN_PER)
+            #print("len(new_population): %d"%len(new_population))
+            # Remove duplicates the fun way
+            new_population = list(set(new_population))
+            #print("len(new_population): %d"%len(new_population))
+    print("Population size: %d"%len(new_population))
 
     population = new_population
