@@ -186,7 +186,7 @@ def calculateFitnessMemo(robot):
     return robot
 
 for generation in range(1, GENERATIONS + 1):
-    print("====================GENERATION %d=========================="%generation)
+    print("====================GENERATION %d===================="%generation)
 
     print("Finding fitness values of population...")
 
