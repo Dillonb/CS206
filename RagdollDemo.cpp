@@ -368,10 +368,12 @@ double RagdollDemo::fitness() {
   const btVector3 pos = body[0]->getCenterOfMassPosition();
   double x = pos.x(), y = pos.y(), z = pos.z();
 
-  double distFromOrigin = sqrt(x*x+y*y+z*z);
+  double distFromOrigin = pos.length();
+
+  int addition = this->totalBars > 10 ? 10 : this->totalBars;
 
   // For now, just use the distance the robot travels "into the screen" for fitness.
-  return z;
+  return distFromOrigin + addition;
 }
 
 void RagdollDemo::displayCallback() {

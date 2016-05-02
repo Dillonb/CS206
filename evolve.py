@@ -4,12 +4,12 @@
 GENERATIONS = 100000
 
 INITIAL_POPULATION_SIZE = 100
-NUM_MOST_FIT = 10
-NUM_CHILDREN_PER = 10
+NUM_MOST_FIT = 50
+NUM_CHILDREN_PER = 5
 
 THREADS = 9
 
-ADD_BAR_RATE = 0.1
+ADD_BAR_RATE = 0.2
 REMOVE_BAR_RATE = 0.05
 CHANGE_SYNAPTIC_WEIGHT_RATE=0.03
 
@@ -17,6 +17,7 @@ import random
 import copy
 from subprocess import Popen, PIPE, STDOUT
 from multiprocessing import Pool
+from sys import stdout
 
 class Node:
     def __init__(self, children=None):
@@ -168,60 +169,77 @@ class Robot:
             p = Popen(cmd, stdout=PIPE, stdin=PIPE, stderr=PIPE)
             fit, errors = p.communicate(input=str.encode(self.encode()))
 
-            self.fitnessMemo = float(fit)
+            try:
+                self.fitnessMemo = float(fit)
+            except:
+                self.fitnessMemo = -1
 
         return self.fitnessMemo
 
+    def printTree(self, node=None, level=0):
+        if node is None:
+            node = self.root
 
-population = []
-for i in range(0, INITIAL_POPULATION_SIZE):
-    population.append(Robot())
+        print(" " * level + "-")
 
-population = list(set(population))
+        for n in node.children:
+            self.printTree(node=n, level=level+1)
 
-top_fitness = 0
+
 
 def calculateFitnessMemo(robot):
     robot.fitness()
     return robot
 
-for generation in range(1, GENERATIONS + 1):
-    print("====================GENERATION %d===================="%generation)
 
-    print("Finding fitness values of population...")
+def main():
+    population = []
+    for i in range(0, INITIAL_POPULATION_SIZE):
+        population.append(Robot())
 
-    # Create memoization results of fitness() in parallel
-    with Pool(processes=THREADS) as pool:
-        population = pool.map(calculateFitnessMemo, population)
+    population = list(set(population))
 
-    # Sort the population by fitness, highest first
-    population.sort(key=lambda robot: robot.fitness(), reverse=True)
-    most_fit = population[:NUM_MOST_FIT]
+    top_fitness = 0
+    for generation in range(1, GENERATIONS + 1):
+        print("====================GENERATION %d===================="%generation)
 
-    if most_fit[0].fitness() > top_fitness:
-        print("New best fitness! %f => %f"%(top_fitness, most_fit[0].fitness()))
-        top_fitness = most_fit[0].fitness()
+        print("Finding fitness values of population...")
 
-        f = open("best.robot", "w")
-        f.write(most_fit[0].encode())
-        f.close()
-    else:
-        print("No new best.")
+        # Create memoization results of fitness() in parallel
+        with Pool(processes=THREADS) as pool:
+            population = pool.map(calculateFitnessMemo, population)
 
-    print("Best robot has %d body parts."%(1 + most_fit[0].root.num_children_deep()))
+        # Sort the population by fitness, highest first
+        population.sort(key=lambda robot: robot.fitness(), reverse=True)
+        most_fit = population[:NUM_MOST_FIT]
 
-    print("Top 10 fitness values: " + " ".join([str(robot.fitness()) for robot in most_fit]))
+        if most_fit[0].fitness() > top_fitness:
+            print("New best fitness! %f => %f"%(top_fitness, most_fit[0].fitness()))
+            top_fitness = most_fit[0].fitness()
 
-    new_population = copy.copy(most_fit)
+            f = open("best.robot", "w")
+            f.write(most_fit[0].encode())
+            f.close()
+        else:
+            print("No new best.")
 
-    print ("Mutating new unique children for next generation...")
-    while len(new_population) < len(most_fit) * NUM_CHILDREN_PER:
-        for robot in most_fit:
-            new_population += robot.getChildren(NUM_CHILDREN_PER)
-            #print("len(new_population): %d"%len(new_population))
-            # Remove duplicates the fun way
-            new_population = list(set(new_population))
-            #print("len(new_population): %d"%len(new_population))
-    print("Population size: %d"%len(new_population))
+        print("Best robot has %d body parts."%(1 + most_fit[0].root.num_children_deep()))
 
-    population = new_population
+        print("Top " + str(NUM_MOST_FIT) + " fitness values: " + " ".join([str(robot.fitness()) for robot in most_fit]))
+
+        new_population = copy.copy(most_fit)
+
+        print ("Mutating new unique children for next generation...")
+        while len(new_population) < INITIAL_POPULATION_SIZE:
+            for robot in most_fit:
+                new_population += robot.getChildren(NUM_CHILDREN_PER)
+                #print("len(new_population): %d"%len(new_population))
+                # Remove duplicates the fun way
+                new_population = list(set(new_population))
+                stdout.write("\r%d/%d"%(len(new_population), INITIAL_POPULATION_SIZE))
+        print("\rPopulation size: %d"%len(new_population))
+
+        population = new_population
+
+if __name__ == "__main__":
+    main()
