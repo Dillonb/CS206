@@ -31,7 +31,17 @@
 #define M_PI_4     0.785398163397448309616
 #endif
 
+/*************
+ * Settings! *
+ *************/
+
+// World friction for all bodies
 #define FRICTION 2.0
+
+/* Number of bars that increase the fitness
+   Each bar up to and including this number will increase the fitness by 1.
+   This is to force the hill climber to select for larger bodies. */
+#define BARS_TO_SELECT_FOR 5
 
 using std::cin;
 using std::cout;
@@ -210,59 +220,16 @@ void RagdollDemo::initPhysics() {
   }
 
 
+  /*********************
+   * Create Robot body *
+   *********************/
   int indexCounter = 0;
   int hingeIndexCounter = 0;
+
   recurseDrawBar(indexCounter, hingeIndexCounter, root, btVector3(0, treeHeight - 1, 0), btVector3(0, treeHeight, 0));
-
-  //CreateCylinderEndpoints(0, btVector3(0,0,0), btVector3(1,1,1), .2);
-
-  //Spawn one ragdoll
-  //btVector3 startOffset(1,0.5,0);
-  //spawnRagdoll(startOffset);
-  //startOffset.setValue(-1,0.5,0);
-  //spawnRagdoll(startOffset);
-
-  /*
-  // Robot's body
-  CreateBox(0, btVector3(0, 2, 0), btVector3(1, 0.2, 1));
-
-  // Leg
-  CreateCylinder(1, btVector3(1.8, 2, 0), btVector3(.9, .2, .2), 'x');
-  CreateCylinder(2, btVector3(2.7, 1, 0), btVector3(0.2, .9, .2), 'y');
-  CreateHinge(0, 0, 1, btVector3(1, 2, 0), btVector3(0, 0, -1));
-  CreateHinge(1, 1, 2, btVector3(2.7, 2, 0), btVector3(0, 0, -1));
-  /*
-
-  // Leg
-  CreateCylinder(3, btVector3(-1.8, 2, 0), btVector3(.9, .2, .2), 'x');
-  CreateCylinder(4, btVector3(-2.7, 1, 0), btVector3(0.2, .9, .2), 'y');
-  CreateHinge(2, 0, 3, btVector3(-1, 2, 0), btVector3(0, 0, -1));
-  CreateHinge(3, 3, 4, btVector3(-2.7, 2, 0), btVector3(0, 0, -1));
-
-  // Leg
-  CreateCylinder(5, btVector3(0, 2, 1.8), btVector3(.2, .9, .9), 'z');
-  CreateCylinder(6, btVector3(0, 1, 2.7), btVector3(0.2, .9, .2), 'y');
-  CreateHinge(4, 0, 5, btVector3(0, 2, 1),btVector3(-1, 0, 0));
-  CreateHinge(5, 5, 6, btVector3(0, 2, 2.7), btVector3(-1, 0, 0));
-
-  // Leg
-  CreateCylinder(7, btVector3(0, 2, -1.8), btVector3(0.2, 0.9, 0.9), 'z');
-  //CreateCylinder(8, btVector3(0, 1, -2.7), btVector3(0.2, 0.9, 0.2), 'y');
-  CreateCylinderEndpoints(8, btVector3(0,5,0), btVector3(10,10,10), 0.2);
-  CreateHinge(6, 0, 7, btVector3(0, 2, -1), btVector3(1, 0, 0));
-  CreateHinge(7, 7, 8, btVector3(0, 2, -2.7), btVector3(1, 0, 0));
-  */
-
 
   clientResetScene();
 }
-
-/*
-  void RagdollDemo::createLegAssembly(int upperIndex, int lowerIndex, int hingeIndex,
-  ) {
-  
-  }
-*/
 
 void RagdollDemo::clientMoveAndDisplay() {
   if (graphics) {
@@ -298,8 +265,6 @@ void RagdollDemo::clientMoveAndDisplay() {
         m_dynamicsWorld->stepSimulation(timing);
 
         // Run the neural net every 10 timesteps
-        // Disabled completely for now
-        // TODO: update this so it works with a dynamic body
         if (!(timeStep % 10)) {
           for (int i = 0; i < this->totalJoints; i++) {
             double motorCommand = 0.0;
@@ -370,9 +335,8 @@ double RagdollDemo::fitness() {
 
   double distFromOrigin = pos.length();
 
-  int addition = this->totalBars > 10 ? 10 : this->totalBars;
+  int addition = this->totalBars > BARS_TO_SELECT_FOR ? BARS_TO_SELECT_FOR : this->totalBars;
 
-  // For now, just use the distance the robot travels "into the screen" for fitness.
   return distFromOrigin + addition;
 }
 
